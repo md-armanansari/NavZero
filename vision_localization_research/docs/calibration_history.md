@@ -7,3 +7,4 @@
 [2026-10-11T20:47:59+05:30] CALIB-CALC #007 // docs(gcs): document keyboard shortcuts for sensor payload switching in presentation guide // RES: OK
 [2026-10-12T10:27:46+05:30] CALIB-CALC #008 // chore(deps): verify numpy and opencv-python binary compatibility matrix // RES: OK
 [2026-10-12T10:46:04+05:30] CALIB-CALC #009 // test(scenarios): add boundary check for crosswind drift vector in desert ingress // RES: OK
+[2026-10-12T11:50:11+05:30] CALIB-CALC #010 // feat(telemetry): add CRC16 checksum field validation to MAVLink packet header // RES: OK
