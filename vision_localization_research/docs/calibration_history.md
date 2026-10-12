@@ -6,3 +6,4 @@
 [2026-10-11T15:33:06+05:30] CALIB-CALC #006 // test(benchmarks): add unit test for zero-drift homography matrix decomposition // RES: OK
 [2026-10-11T20:47:59+05:30] CALIB-CALC #007 // docs(gcs): document keyboard shortcuts for sensor payload switching in presentation guide // RES: OK
 [2026-10-12T10:27:46+05:30] CALIB-CALC #008 // chore(deps): verify numpy and opencv-python binary compatibility matrix // RES: OK
+[2026-10-12T10:46:04+05:30] CALIB-CALC #009 // test(scenarios): add boundary check for crosswind drift vector in desert ingress // RES: OK
