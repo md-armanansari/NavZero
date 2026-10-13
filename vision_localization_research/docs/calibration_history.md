@@ -13,3 +13,4 @@
 [2026-10-12T20:41:34+05:30] CALIB-CALC #013 // perf(engine): pre-allocate NumPy arrays for 400-point Catmull-Rom spline points // RES: OK
 [2026-10-13T11:49:06+05:30] CALIB-CALC #014 // docs(mavlink): expand STANAG-4586 packet framing definition and byte layout // RES: OK
 [2026-10-13T12:07:34+05:30] CALIB-CALC #015 // fix(matcher): guard against singular matrix exception in cv2.findHomography // RES: OK
+[2026-10-13T12:49:58+05:30] CALIB-CALC #016 // test(sensor): assert IR White-Hot colormap preserves luminance gradient dynamics // RES: OK
