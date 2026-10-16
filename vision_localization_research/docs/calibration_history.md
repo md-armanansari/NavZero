@@ -27,3 +27,4 @@
 [2026-10-15T18:41:54+05:30] CALIB-CALC #027 // docs(architecture): add component interaction notes for Pixhawk companion computer // RES: OK
 [2026-10-16T12:52:27+05:30] CALIB-CALC #028 // perf(homography): optimize inlier mask boolean indexing for 2000 feature points // RES: OK
 [2026-10-16T15:51:26+05:30] CALIB-CALC #029 // test(failsafe): assert autonomous loiter activation when vision inliers drop below 12 // RES: OK
+[2026-10-16T17:55:19+05:30] CALIB-CALC #030 // fix(geo): correct geodetic coordinate precision formatting in telemetry log export // RES: OK
