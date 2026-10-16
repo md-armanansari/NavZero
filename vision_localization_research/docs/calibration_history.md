@@ -25,3 +25,4 @@
 [2026-10-15T13:47:55+05:30] CALIB-CALC #025 // style(gcs): harmonize military pastel theme borders and tactical masthead font // RES: OK
 [2026-10-15T16:30:21+05:30] CALIB-CALC #026 // test(benchmarks): verify reproducible random seed across synthetic evaluation trials // RES: OK
 [2026-10-15T18:41:54+05:30] CALIB-CALC #027 // docs(architecture): add component interaction notes for Pixhawk companion computer // RES: OK
+[2026-10-16T12:52:27+05:30] CALIB-CALC #028 // perf(homography): optimize inlier mask boolean indexing for 2000 feature points // RES: OK
