@@ -32,3 +32,4 @@
 [2026-10-16T19:45:59+05:30] CALIB-CALC #032 // docs(setup): add troubleshooting tips for Windows PowerShell execution policy // RES: OK
 [2026-10-17T11:26:21+05:30] CALIB-CALC #033 // refactor(scenarios): modularize threat category definitions and mission parameters // RES: OK
 [2026-10-17T17:27:04+05:30] CALIB-CALC #034 // perf(dispatcher): cache tactical map rendering primitives to avoid redundant draws // RES: OK
+[2026-10-17T19:11:47+05:30] CALIB-CALC #035 // test(mavlink): assert GlobalPositionInt coordinate scaling factor matches 1e7 standard // RES: OK
