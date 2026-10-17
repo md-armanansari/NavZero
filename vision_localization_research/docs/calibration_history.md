@@ -30,3 +30,4 @@
 [2026-10-16T17:55:19+05:30] CALIB-CALC #030 // fix(geo): correct geodetic coordinate precision formatting in telemetry log export // RES: OK
 [2026-10-16T18:21:33+05:30] CALIB-CALC #031 // test(cockpit): verify artificial horizon pitch ladder roll compensation at 30 deg // RES: OK
 [2026-10-16T19:45:59+05:30] CALIB-CALC #032 // docs(setup): add troubleshooting tips for Windows PowerShell execution policy // RES: OK
+[2026-10-17T11:26:21+05:30] CALIB-CALC #033 // refactor(scenarios): modularize threat category definitions and mission parameters // RES: OK
