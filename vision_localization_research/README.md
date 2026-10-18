@@ -43,3 +43,14 @@ Provides memory-safe inspection, format validation, and side-by-side visualizati
 - `load_image(path, to_rgb=True)`: Loads array and converts BGR to RGB.
 - `visualize_image_pair(img_a, label_a, img_b, label_b, save_path)`: Plots two images side-by-side without mutating source arrays.
 
+### Visual Feature Matching (`vision_loc.feature_matcher`)
+Provides CPU-efficient visual correspondence and outlier rejection:
+- `VisualFeatureMatcher(max_features, ratio_threshold, ransac_reproj_threshold)`:
+  - Extracts 256-bit binary ORB features.
+  - Matches descriptors using bitwise Hamming distance.
+  - Filters ambiguous matches using Lowe's ratio test ($d_1 < \text{ratio} \times d_2$).
+  - Rejects geometric outliers using RANSAC homography.
+  - Returns `MatchMetrics` (keypoint counts, tentative matches, inlier counts, inlier ratio, and detection/matching latency).
+- `VisualFeatureMatcher.draw_matches_visualization(...)`: Renders visual correspondence lines between matching points.
+
+

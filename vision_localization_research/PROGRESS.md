@@ -14,7 +14,14 @@
   - [x] Metadata reporting: width, height, channel count, dtype, file size, uncompressed memory usage.
   - [x] Side-by-side Matplotlib visualization with memory-safe downscaling for display without mutating arrays.
   - [x] Comprehensive test suite with 9 new unit tests (13 total passing).
-- [ ] **Milestone 3: Visual feature matching**
+- [x] **Milestone 3: Visual feature matching**
+  - [x] Separated feature detection & matching in `src/vision_loc/feature_matcher.py`.
+  - [x] ORB keypoints + binary descriptors matched using Hamming distance (`NORM_HAMMING`).
+  - [x] Lowe's ratio test outlier filtering with documented limitations.
+  - [x] RANSAC homography geometric outlier rejection.
+  - [x] Visual correspondence drawing tool (`draw_matches_visualization`).
+  - [x] Quantitative metrics: feature counts, tentative matches, inlier counts, inlier ratio, and processing times.
+  - [x] Tested with reproducible patterns, dissimilar pairs, blank/empty images, and 0-sized arrays (5 new unit tests, 18 total passing).
 - [ ] **Milestone 4: Georeferenced image concepts**
 - [ ] **Milestone 5: Research evaluation**
 - [ ] **Milestone 6: Results dashboard**
