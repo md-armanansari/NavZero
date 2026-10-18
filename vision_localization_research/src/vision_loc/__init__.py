@@ -23,14 +23,20 @@ from vision_loc.georeference import (
 from vision_loc.evaluation import (
     BenchmarkSummary,
     TrialResult,
+    calculate_independent_reprojection_error,
     compute_summary_statistics,
     create_base_synthetic_landscape,
     evaluate_trial,
     export_results_to_csv,
     generate_benchmark_pairs,
 )
+from vision_loc.dashboard_data import (
+    DashboardRecord,
+    filter_records,
+    load_benchmark_records,
+)
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "ImageMetadata",
@@ -47,9 +53,13 @@ __all__ = [
     "read_world_file",
     "BenchmarkSummary",
     "TrialResult",
+    "calculate_independent_reprojection_error",
     "compute_summary_statistics",
     "create_base_synthetic_landscape",
     "evaluate_trial",
     "export_results_to_csv",
     "generate_benchmark_pairs",
+    "DashboardRecord",
+    "filter_records",
+    "load_benchmark_records",
 ]

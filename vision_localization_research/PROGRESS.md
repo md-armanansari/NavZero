@@ -40,5 +40,12 @@
   - [x] Explicitly noted that sample match rates describe this specific 7-pair synthetic suite only.
   - [x] CSV results export, Markdown report, and diagnostic plots regenerated in `experiments/`.
   - [x] Full unit test suite passing (29 tests total).
-- [ ] **Milestone 6: Results dashboard**
+- [x] **Milestone 6: Results dashboard**
+  - [x] Decoupled dashboard data loading and filtering module (`src/vision_loc/dashboard_data.py`).
+  - [x] Full Streamlit dashboard interface (`src/vision_loc/dashboard_app.py`) on port 8502.
+  - [x] Displays research overview metrics, filtered trial results table, visual correspondences, pixel RMSE charts, and steady-state latency bar charts.
+  - [x] Preserves failed trials with explicit N/A values.
+  - [x] Incorporates prominent scientific disclaimers and research limitations.
+  - [x] Unit test suite for data loading and filtering (5 new unit tests, 34 total passing).
+  - [x] Added `run_dashboard.bat` one-click Windows launcher.
 - [ ] **Milestone 7: Research report**

@@ -80,6 +80,23 @@ Provides automated, reproducible experimental evaluation:
   - `experiments/benchmark_report.md`: Summary markdown report with scientific disclaimers.
   - `experiments/plots/evaluation_metrics_plot.png`: Diagnostic bar charts with latency error bars.
 
+### Interactive Evaluation Dashboard (`vision_loc.dashboard_app`)
+Local Streamlit research interface:
+- Launch via PowerShell:
+  ```powershell
+  .\.venv\Scripts\streamlit.exe run src\vision_loc\dashboard_app.py --server.port 8502
+  ```
+  Or double-click `run_dashboard.bat`.
+- Opens at: `http://localhost:8502`
+- Sections:
+  - **A. Research Overview:** Overall trials, pass/fail counts, median steady-state latency, median pixel RMSE.
+  - **B. Experiment Results Table:** Filterable by category/status, preserving N/A values for failed trials.
+  - **C. Visual Correspondences:** Explains inliers vs localization.
+  - **D. Geometric Error Analysis:** Bar chart of independent pixel RMSE.
+  - **E. Performance Analysis:** Steady-state latency per scenario.
+  - **F. Research Limitations:** Documents synthetic boundaries and lack of operational testing.
+
+
 
 
 
