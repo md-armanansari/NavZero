@@ -48,4 +48,11 @@
   - [x] Incorporates prominent scientific disclaimers and research limitations.
   - [x] Unit test suite for data loading and filtering (5 new unit tests, 34 total passing).
   - [x] Added `run_dashboard.bat` one-click Windows launcher.
-- [ ] **Milestone 7: Research report**
+- [x] **Milestone 7: Research report**
+  - [x] Comprehensive technical report created in `docs/RESEARCH_REPORT.md` (18 structured sections).
+  - [x] System architecture & workflow diagrams (Mermaid).
+  - [x] Precise metric definitions: independent 25-point grid reprojection RMSE, steady-state latency, inlier ratio.
+  - [x] Documented limitations: synthetic data boundaries, sample size constraints, no real-world geodetic claims, no operational flight testing.
+  - [x] Reproduction guide with exact PowerShell commands.
+  - [x] Verified peer-reviewed citations (Rublee et al., Lowe, Fischler & Bolles, GDAL, OpenCV).
+  - [x] 100% test pass rate maintained across all 34 tests.

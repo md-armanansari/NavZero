@@ -9,20 +9,35 @@ An offline computer vision research prototype investigating geographic coordinat
 - Error analysis, matching confidence, and false-positive / failed-match detection.
 - Latency and CPU computational requirements on standard consumer hardware.
 
+## Project Documentation
+- [Research Report (Full Technical Specification)](docs/RESEARCH_REPORT.md)
+- [Milestone Progress Tracker](PROGRESS.md)
+- [Benchmark Results Table (CSV)](experiments/benchmark_results.csv)
+- [Benchmark Summary Report](experiments/benchmark_report.md)
+
 ## Project Structure
 ```
 vision_localization_research/
-├── README.md               # Research documentation
+├── docs/
+│   └── RESEARCH_REPORT.md  # Milestone 7 comprehensive research report
+├── README.md               # Quickstart guide
 ├── PROGRESS.md             # Milestone tracking checklist
 ├── requirements.txt        # Pinned dependencies
-├── data/                   # Licensed sample aerial and reference imagery
-│   ├── reference/          # Georeferenced aerial orthoimagery
-│   └── query/              # Target query aerial frames
+├── pyproject.toml          # Build and test configuration
+├── run_dashboard.bat       # One-click Windows dashboard launcher
+├── experiments/            # Benchmark CSV, plots, and markdown summaries
+├── scripts/
+│   └── run_benchmarks.py   # Automated reproducible benchmark runner
 ├── src/
 │   └── vision_loc/         # Core research algorithms
-│       └── __init__.py
-└── tests/                  # Unit and integration test suite
-    └── test_foundation.py
+│       ├── __init__.py
+│       ├── image_inspector.py
+│       ├── feature_matcher.py
+│       ├── georeference.py
+│       ├── evaluation.py
+│       ├── dashboard_data.py
+│       └── dashboard_app.py
+└── tests/                  # 34 automated unit & integration tests
 ```
 
 ## Setup Instructions (Windows PowerShell)
