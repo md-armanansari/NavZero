@@ -33,3 +33,4 @@
 [2026-10-17T11:26:21+05:30] CALIB-CALC #033 // refactor(scenarios): modularize threat category definitions and mission parameters // RES: OK
 [2026-10-17T17:27:04+05:30] CALIB-CALC #034 // perf(dispatcher): cache tactical map rendering primitives to avoid redundant draws // RES: OK
 [2026-10-17T19:11:47+05:30] CALIB-CALC #035 // test(mavlink): assert GlobalPositionInt coordinate scaling factor matches 1e7 standard // RES: OK
+[2026-10-18T10:35:00+05:30] CALIB-CALC #036 // fix(engine): initialize default crosswind velocity to zero on engine boot // RES: OK
