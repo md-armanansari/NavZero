@@ -71,10 +71,15 @@ Provides automated, reproducible experimental evaluation:
   .\.venv\Scripts\python.exe scripts\run_benchmarks.py
   ```
 - Evaluates degradation categories: baseline translation, illumination (low-light, glare), rotation (20°), sensor noise, and hard negatives (uncorrelated noise, blank canvas).
+- Methodology & Validation:
+  - **Latency:** Uses 1 unrecorded warmup run followed by 5 steady-state timed repetitions per trial, reporting median and standard deviation.
+  - **Geometric Accuracy:** Measured as Root Mean Square Error (RMSE in pixels) over an independent $5 \times 5$ grid of 25 checkpoints across the image (never reusing inlier points as ground truth).
+  - **Geographic Scale:** Multiplies pixel RMSE by synthetic GSD (0.5m/px) strictly as a digital grid demonstration without claiming operational geodetic GPS-denied accuracy.
 - Outputs:
-  - `experiments/benchmark_results.csv`: Per-trial metrics, inliers, latency, and position errors.
-  - `experiments/benchmark_report.md`: Summary markdown report.
-  - `experiments/plots/evaluation_metrics_plot.png`: Diagnostic bar charts.
+  - `experiments/benchmark_results.csv`: Per-trial metrics, inliers, latency, and reprojection errors.
+  - `experiments/benchmark_report.md`: Summary markdown report with scientific disclaimers.
+  - `experiments/plots/evaluation_metrics_plot.png`: Diagnostic bar charts with latency error bars.
+
 
 
 
