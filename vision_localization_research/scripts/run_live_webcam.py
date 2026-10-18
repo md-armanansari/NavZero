@@ -1,8 +1,9 @@
 """
-Live Physical Webcam Localization & Feature Matcher Proof.
+Live Physical Webcam Feature Matcher & Localization Proof.
 
-Run this to physically demonstrate the exact computer vision pipeline
-using your laptop webcam in real-time at 30 FPS.
+Demonstrates real-time visual feature extraction (ORB), Hamming descriptor
+matching, Lowe's ratio test, and RANSAC homography estimation directly
+from your laptop's physical webcam at 30 FPS.
 """
 
 import sys
@@ -18,13 +19,12 @@ sys.path.insert(0, str(repo_root / "src"))
 from vision_loc.feature_matcher import VisualFeatureMatcher
 
 
-def create_sample_reference(sample_path: Path):
-    """Creates a high-contrast reference target if none exists."""
+def create_sample_reference(sample_path: Path) -> np.ndarray:
+    """Generates a high-contrast reference flight map if none exists."""
     sample_path.parent.mkdir(parents=True, exist_ok=True)
     img = np.zeros((480, 640, 3), dtype=np.uint8)
-    img[:] = (235, 235, 235)  # Light gray background
+    img[:] = (235, 235, 235)
 
-    # Geometric defense flight grid and text
     cv2.rectangle(img, (50, 50), (590, 430), (40, 40, 40), 3)
     cv2.circle(img, (320, 240), 90, (0, 102, 204), 4)
     cv2.drawMarker(img, (320, 240), (0, 0, 180), cv2.MARKER_CROSS, 40, 3)
@@ -47,11 +47,11 @@ def run_live_webcam_demo():
     print("  Defense Visual Localization & Feature Matching Engine")
     print("=" * 70)
     print("\nHOW IT WORKS:")
-    print("1. Press 'S' to SNAP the current camera frame as your Reference Target,")
-    print("   OR show any book/printed image/phone screen to the camera.")
-    print("2. Move or tilt the object — watch green RANSAC inliers track it live!")
-    print("3. Real FPS, Inlier counts, and Reprojection are computed on your CPU.")
-    print("4. Press 'Q' or 'ESC' to exit.\n")
+    print("1. Click on the camera video window.")
+    print("2. Point camera at any book, phone screen, or photo.")
+    print("3. Press 'S' on your keyboard to SNAP it as your Reference Map.")
+    print("4. Move or tilt the object — watch green RANSAC inliers track live!")
+    print("5. Press 'Q' or 'ESC' to exit cleanly.\n")
 
     ref_dir = repo_root / "data"
     default_ref_path = ref_dir / "reference_target.png"
@@ -63,13 +63,6 @@ def run_live_webcam_demo():
         print("[ERROR] Could not open webcam (index 0).")
         return
 
-    # Warmup camera
-    ret, frame = cap.read()
-    if not ret or frame is None:
-        print("[ERROR] Failed to read frame from webcam.")
-        cap.release()
-        return
-
     # Check for default reference image or create sample
     if default_ref_path.exists():
         ref_bgr = cv2.imread(str(default_ref_path))
@@ -77,21 +70,20 @@ def run_live_webcam_demo():
         ref_bgr = create_sample_reference(default_ref_path)
 
     ref_gray = cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2GRAY)
-    ref_kp, ref_desc = matcher.extract_features(ref_gray)
+    ref_kp, ref_desc, _ = matcher.extract_features(ref_gray)
 
     fps_history = []
-    mode = "DEFAULT_TARGET"
-
-    print("[INFO] Live tracking started. OpenCV window opened.")
+    print("[INFO] Live tracking running. Focus the camera window and press 'S' to snap!")
 
     while True:
         start_time = time.perf_counter()
         ret, frame = cap.read()
         if not ret or frame is None:
-            break
+            print("[WARN] Camera frame capture failed, retrying...")
+            continue
 
         query_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        query_kp, query_desc = matcher.extract_features(query_gray)
+        query_kp, query_desc, _ = matcher.extract_features(query_gray)
 
         inliers_count = 0
         inlier_ratio = 0.0
@@ -105,19 +97,28 @@ def run_live_webcam_demo():
             and len(ref_kp) >= 4
             and len(query_kp) >= 4
         ):
-            tentative = matcher.match_descriptors(query_desc, ref_desc)
-            good_matches = matcher.filter_ratio(tentative)
+            # KNN match with k=2
+            raw_knn = matcher.matcher.knnMatch(query_desc, ref_desc, k=2)
+            for pair in raw_knn:
+                if len(pair) == 2:
+                    m, n = pair
+                    if m.distance < matcher.ratio_threshold * n.distance:
+                        good_matches.append(m)
 
+            # RANSAC homography estimation
             if len(good_matches) >= 4:
-                H, mask, inliers_count, inlier_ratio = matcher.estimate_geometry_ransac(
-                    query_kp, ref_kp, good_matches
-                )
+                src_pts = np.float32([query_kp[m.queryIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+                dst_pts = np.float32([ref_kp[m.trainIdx].pt for m in good_matches]).reshape(-1, 1, 2)
+
+                H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, matcher.ransac_reproj_threshold)
                 if H is not None and mask is not None:
                     homography = H
-                    inlier_matches = [m for m, inlier in zip(good_matches, mask) if inlier]
+                    mask_flat = mask.ravel().tolist()
+                    inlier_matches = [m for m, is_in in zip(good_matches, mask_flat) if is_in]
+                    inliers_count = len(inlier_matches)
+                    inlier_ratio = (inliers_count / len(good_matches)) if len(good_matches) > 0 else 0.0
 
-        # Draw Side-by-Side Match Visualization
-        # Resize both to same height for clean display
+        # Side-by-side display sizing
         disp_h = 420
         scale_ref = disp_h / ref_bgr.shape[0]
         scale_query = disp_h / frame.shape[0]
@@ -125,7 +126,6 @@ def run_live_webcam_demo():
         ref_resized = cv2.resize(ref_bgr, (int(ref_bgr.shape[1] * scale_ref), disp_h))
         frame_resized = cv2.resize(frame, (int(frame.shape[1] * scale_query), disp_h))
 
-        # Re-scale keypoints for drawing on resized images
         scaled_ref_kp = [
             cv2.KeyPoint(kp.pt[0] * scale_ref, kp.pt[1] * scale_ref, kp.size * scale_ref)
             for kp in ref_kp
@@ -135,8 +135,7 @@ def run_live_webcam_demo():
             for kp in query_kp
         ]
 
-        # Draw inlier matches in green
-        matches_to_draw = inlier_matches if len(inlier_matches) > 0 else good_matches[:30]
+        matches_to_draw = inlier_matches if len(inlier_matches) > 0 else good_matches[:25]
         match_color = (0, 255, 0) if len(inlier_matches) >= 4 else (0, 165, 255)
 
         vis = cv2.drawMatches(
@@ -151,14 +150,13 @@ def run_live_webcam_demo():
             flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
         )
 
-        # Draw bounding polygon if homography exists
+        # Perspective bounding box overlay
         if homography is not None:
             h_ref, w_ref = ref_bgr.shape[:2]
             pts_ref = np.float32([[0, 0], [w_ref, 0], [w_ref, h_ref], [0, h_ref]]).reshape(-1, 1, 2)
             try:
                 H_inv = np.linalg.inv(homography)
                 pts_in_query = cv2.perspectiveTransform(pts_ref, H_inv)
-                # Rescale to query resized window
                 pts_in_vis = pts_in_query.copy()
                 pts_in_vis[:, 0, 0] *= scale_query
                 pts_in_vis[:, 0, 1] *= scale_query
@@ -173,9 +171,9 @@ def run_live_webcam_demo():
             fps_history.pop(0)
         avg_fps = sum(fps_history) / len(fps_history)
 
-        # Overlay Telemetry HUD
+        # Telemetry HUD
         hud_bg = vis.copy()
-        cv2.rectangle(hud_bg, (0, 0), (vis.shape[1], 45), (20, 20, 20), -1)
+        cv2.rectangle(hud_bg, (0, 0), (vis.shape[1], 46), (20, 20, 20), -1)
         cv2.addWeighted(hud_bg, 0.85, vis, 0.15, 0, vis)
 
         status_text = "LOCKED (RANSAC HOMOGRAPHY)" if len(inlier_matches) >= 4 else "SEARCHING CORRESPONDENCES..."
@@ -184,9 +182,9 @@ def run_live_webcam_demo():
         cv2.putText(
             vis,
             f"LIVE UAV CAMERA (LEFT)  vs  MAP REFERENCE (RIGHT) | {status_text}",
-            (15, 22),
+            (15, 20),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.55,
+            0.52,
             status_color,
             2,
         )
@@ -205,14 +203,14 @@ def run_live_webcam_demo():
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q") or key == 27:
             break
-        elif key == ord("s"):
+        elif key == ord("s") or key == ord("S"):
             # Snap current camera frame as reference target!
-            print("\n[SNAP] Captured new reference image from webcam!")
+            print("\n[SNAP] Success! Captured new reference target from camera.")
             ref_bgr = frame.copy()
             ref_gray = cv2.cvtColor(ref_bgr, cv2.COLOR_BGR2GRAY)
-            ref_kp, ref_desc = matcher.extract_features(ref_gray)
+            ref_kp, ref_desc, _ = matcher.extract_features(ref_gray)
             cv2.imwrite(str(default_ref_path), ref_bgr)
-            mode = "USER_SNAPPED_TARGET"
+            print(f"[SNAP] Reference features extracted: {len(ref_kp)} keypoints.")
 
     cap.release()
     cv2.destroyAllWindows()
@@ -220,4 +218,10 @@ def run_live_webcam_demo():
 
 
 if __name__ == "__main__":
-    run_live_webcam_demo()
+    try:
+        run_live_webcam_demo()
+    except Exception as exc:
+        print(f"\n[CRITICAL ERROR] {type(exc).__name__}: {exc}")
+        import traceback
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
