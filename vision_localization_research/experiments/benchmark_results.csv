@@ -1,0 +1,8 @@
+pair_id,category,description,status,keypoints_query,keypoints_ref,tentative_matches,ratio_matches,geometric_inliers,inlier_ratio,total_time_ms,true_center_x_m,true_center_y_m,est_center_x_m,est_center_y_m,position_error_m,localization_success
+pair_01_baseline,Baseline,Standard translation crop with identical visual conditions,SUCCESS,205,1202,205,108,101,0.9352,1017.29,500300.0,3999700.0,500299.956,3999700.218,0.222,True
+pair_02_brightness_dark,Illumination,Simulated low-light (45% reduction in brightness),SUCCESS,122,1202,122,86,84,0.9767,57.49,500300.0,3999700.0,500299.889,3999700.266,0.288,True
+pair_03_brightness_bright,Illumination,Simulated high glare / overexposure (+35% intensity),SUCCESS,202,1202,202,31,21,0.6774,64.7,500300.0,3999700.0,500295.823,3999700.498,4.206,True
+pair_04_rotation_20deg,Geometric,20-degree in-plane rotation,SUCCESS,216,1202,216,70,65,0.9286,62.78,500300.0,3999700.0,500300.144,3999700.066,0.159,True
+pair_05_sensor_noise,Sensor Noise,Additive zero-mean Gaussian sensor noise (sigma=20),SUCCESS,755,1202,755,77,70,0.9091,77.74,500300.0,3999700.0,500300.084,3999700.425,0.433,True
+pair_06_uncorrelated_noise,Hard Negative,Uncorrelated random noise canvas (expected zero match),NO_CORRESPONDENCE,1013,1202,1013,0,0,0.0,99.34,,,,,,False
+pair_07_blank_frame,Hard Negative,Completely blank zero-feature frame,INSUFFICIENT_FEATURES,0,1202,0,0,0,0.0,63.68,,,,,,False

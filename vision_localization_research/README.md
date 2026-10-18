@@ -64,5 +64,18 @@ Provides mathematical mapping between discrete image pixel indices and spatial c
   - Reports bounding box, resolution, and coordinate system type (`PROJECTED` vs `GEOGRAPHIC`).
   - Returns `has_georeference=False` if metadata is missing; never silently guesses a CRS.
 
+### Research Evaluation & Benchmarking (`vision_loc.evaluation`)
+Provides automated, reproducible experimental evaluation:
+- Run benchmark suite via PowerShell:
+  ```powershell
+  .\.venv\Scripts\python.exe scripts\run_benchmarks.py
+  ```
+- Evaluates degradation categories: baseline translation, illumination (low-light, glare), rotation (20°), sensor noise, and hard negatives (uncorrelated noise, blank canvas).
+- Outputs:
+  - `experiments/benchmark_results.csv`: Per-trial metrics, inliers, latency, and position errors.
+  - `experiments/benchmark_report.md`: Summary markdown report.
+  - `experiments/plots/evaluation_metrics_plot.png`: Diagnostic bar charts.
+
+
 
 

@@ -20,8 +20,17 @@ from vision_loc.georeference import (
     inspect_georeference,
     read_world_file,
 )
+from vision_loc.evaluation import (
+    BenchmarkSummary,
+    TrialResult,
+    compute_summary_statistics,
+    create_base_synthetic_landscape,
+    evaluate_trial,
+    export_results_to_csv,
+    generate_benchmark_pairs,
+)
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "ImageMetadata",
@@ -36,4 +45,11 @@ __all__ = [
     "GeoReferenceMetadata",
     "inspect_georeference",
     "read_world_file",
+    "BenchmarkSummary",
+    "TrialResult",
+    "compute_summary_statistics",
+    "create_base_synthetic_landscape",
+    "evaluate_trial",
+    "export_results_to_csv",
+    "generate_benchmark_pairs",
 ]

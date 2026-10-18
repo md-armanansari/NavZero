@@ -30,6 +30,13 @@
   - [x] Support for ESRI world files (`.tfw`, `.pgw`, `.wld`) with explicit handling of missing metadata.
   - [x] Never silently invents or assumes a coordinate reference system.
   - [x] Comprehensive test suite with 5 new unit tests (23 total passing).
-- [ ] **Milestone 5: Research evaluation**
+- [x] **Milestone 5: Research evaluation**
+  - [x] Documented benchmark protocol with deterministic degradation suite (`scripts/run_benchmarks.py`).
+  - [x] Evaluated illumination changes (low-light, glare), 20-deg rotation, Gaussian sensor noise, and hard negatives.
+  - [x] Measured quantitative metrics: keypoints, tentative matches, ratio matches, geometric inliers, inlier ratio, and latency.
+  - [x] Evaluated position error against ground-truth coordinate projections (median 0.288m, P95 3.451m).
+  - [x] Clean rejection of uncorrelated noise (`NO_CORRESPONDENCE`) and blank frames (`INSUFFICIENT_FEATURES`) without false positives.
+  - [x] CSV results export, Markdown report, and diagnostic plots generated in `experiments/`.
+  - [x] Full unit test suite passing (28 tests total).
 - [ ] **Milestone 6: Results dashboard**
 - [ ] **Milestone 7: Research report**
