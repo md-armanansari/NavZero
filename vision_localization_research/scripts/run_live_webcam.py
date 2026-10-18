@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 
 # Ensure src is in python path
-repo_root = Path(__file__).resolve().parent
+repo_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(repo_root / "src"))
 
 from vision_loc.feature_matcher import VisualFeatureMatcher
