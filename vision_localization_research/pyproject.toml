@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vision_loc"
+version = "0.2.0"
+description = "Vision-Based Aerial Localization in GPS-Denied Environments (Research Prototype)"
+authors = [{ name = "Research Team" }]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.0.0",
+    "opencv-python>=4.10.0",
+    "matplotlib>=3.9.0",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]

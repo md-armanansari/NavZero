@@ -8,7 +8,12 @@
   - [x] Create requirements.txt and README.md.
   - [x] Set up Python virtual environment (`.venv`).
   - [x] Verify test suite with pytest (4 tests passed).
-- [ ] **Milestone 2: Image inspection**
+- [x] **Milestone 2: Image inspection**
+  - [x] Lightweight image inspection module in `src/vision_loc/image_inspector.py`.
+  - [x] Format support for PNG, JPEG, TIFF, BMP with error handling for missing/empty/corrupt files.
+  - [x] Metadata reporting: width, height, channel count, dtype, file size, uncompressed memory usage.
+  - [x] Side-by-side Matplotlib visualization with memory-safe downscaling for display without mutating arrays.
+  - [x] Comprehensive test suite with 9 new unit tests (13 total passing).
 - [ ] **Milestone 3: Visual feature matching**
 - [ ] **Milestone 4: Georeferenced image concepts**
 - [ ] **Milestone 5: Research evaluation**

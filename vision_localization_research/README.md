@@ -32,5 +32,14 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-pytest
+pytest -v
 ```
+
+## Module Documentation
+
+### Image Inspection (`vision_loc.image_inspector`)
+Provides memory-safe inspection, format validation, and side-by-side visualization:
+- `inspect_image_metadata(path)`: Returns `ImageMetadata` with file size, dimensions, channels, data type, and uncompressed memory footprint.
+- `load_image(path, to_rgb=True)`: Loads array and converts BGR to RGB.
+- `visualize_image_pair(img_a, label_a, img_b, label_b, save_path)`: Plots two images side-by-side without mutating source arrays.
+
