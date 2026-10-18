@@ -22,7 +22,14 @@
   - [x] Visual correspondence drawing tool (`draw_matches_visualization`).
   - [x] Quantitative metrics: feature counts, tentative matches, inlier counts, inlier ratio, and processing times.
   - [x] Tested with reproducible patterns, dissimilar pairs, blank/empty images, and 0-sized arrays (5 new unit tests, 18 total passing).
-- [ ] **Milestone 4: Georeferenced image concepts**
+- [x] **Milestone 4: Georeferenced image concepts**
+  - [x] Audited geospatial environment: documented absence and risks of C++ GDAL/Rasterio compilation on Windows.
+  - [x] Implemented standard GDAL 6-parameter affine transform in pure Python (`src/vision_loc/georeference.py`).
+  - [x] Documented mathematical relationships: pixel space -> projected CRS (meters) -> geographic CRS (degrees).
+  - [x] Invertibility checks and forward/inverse roundtrip validated within $10^{-6}$ numerical tolerance.
+  - [x] Support for ESRI world files (`.tfw`, `.pgw`, `.wld`) with explicit handling of missing metadata.
+  - [x] Never silently invents or assumes a coordinate reference system.
+  - [x] Comprehensive test suite with 5 new unit tests (23 total passing).
 - [ ] **Milestone 5: Research evaluation**
 - [ ] **Milestone 6: Results dashboard**
 - [ ] **Milestone 7: Research report**

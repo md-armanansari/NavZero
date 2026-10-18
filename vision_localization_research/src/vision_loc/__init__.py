@@ -12,8 +12,16 @@ from vision_loc.feature_matcher import (
     MatchMetrics,
     VisualFeatureMatcher,
 )
+from vision_loc.georeference import (
+    AffineTransform,
+    CoordinateBounds,
+    CoordinateType,
+    GeoReferenceMetadata,
+    inspect_georeference,
+    read_world_file,
+)
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "ImageMetadata",
@@ -22,4 +30,10 @@ __all__ = [
     "visualize_image_pair",
     "MatchMetrics",
     "VisualFeatureMatcher",
+    "AffineTransform",
+    "CoordinateBounds",
+    "CoordinateType",
+    "GeoReferenceMetadata",
+    "inspect_georeference",
+    "read_world_file",
 ]
