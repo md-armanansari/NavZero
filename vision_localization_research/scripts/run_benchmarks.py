@@ -63,6 +63,15 @@ def main():
     for p in test_pairs:
         trial = evaluate_trial(matcher, p, synthetic_georef, timing_repeats=timing_repeats)
         results.append(trial)
+
+        # Save correspondence visual evidence if matches exist
+        if trial.status == "SUCCESS":
+            _, kp_q, kp_r, inliers, _ = matcher.match(p["query"], p["reference"])
+            vis_file = plots_dir / f"matches_{trial.pair_id}.png"
+            matcher.draw_matches_visualization(
+                p["query"], kp_q, p["reference"], kp_r, inliers, max_matches_to_draw=40, save_path=vis_file
+            )
+
         rmse_str = f"{trial.pixel_reprojection_rmse:.2f} px" if trial.pixel_reprojection_rmse is not None else "N/A"
         time_str = f"{trial.steady_state_latency_median_ms:.1f} ± {trial.steady_state_latency_std_ms:.1f} ms"
         print(f"      Trial {trial.pair_id:<28} | Status: {trial.status:<20} | Inliers: {trial.geometric_inliers:<3} | RMSE: {rmse_str:<9} | Time: {time_str}")

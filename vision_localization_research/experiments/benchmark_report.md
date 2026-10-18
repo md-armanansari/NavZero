@@ -6,8 +6,8 @@
 - **Total Pairs Tested:** 7
 - **Sample Match Rate:** 71.4%
 - **Timing Repetitions:** 5 steady-state passes (after 1 warmup pass)
-- **Median Steady-State Latency:** 63.21 ms
-- **95th Percentile Latency (P95):** 81.36 ms
+- **Median Steady-State Latency:** 282.12 ms
+- **95th Percentile Latency (P95):** 350.17 ms
 - **Median Independent Pixel RMSE:** 2.131 pixels (across 25 independent test grid points)
 - **95th Percentile Pixel RMSE (P95):** 13.214 pixels
 - **Median Synthetic Grid Scale Error:** 1.066 meters (at synthetic GSD=0.5m/px)
@@ -17,10 +17,10 @@
 
 | Pair ID | Category | Status | Inliers | Pixel RMSE (px) | Synthetic Grid Err (m) | Steady-State Latency (ms) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `pair_01_baseline` | Baseline | `SUCCESS` | 101 | 0.88 | 0.44 | 56.96 ± 3.51 |
-| `pair_02_brightness_dark` | Illumination | `SUCCESS` | 84 | 0.69 | 0.35 | 53.45 ± 6.63 |
-| `pair_03_brightness_bright` | Illumination | `SUCCESS` | 21 | 15.84 | 7.92 | 64.67 ± 3.31 |
-| `pair_04_rotation_20deg` | Geometric | `SUCCESS` | 65 | 2.72 | 1.36 | 63.21 ± 5.79 |
-| `pair_05_sensor_noise` | Sensor Noise | `SUCCESS` | 70 | 2.13 | 1.07 | 81.97 ± 4.45 |
-| `pair_06_uncorrelated_noise` | Hard Negative | `NO_CORRESPONDENCE` | 0 | N/A | N/A | 79.93 ± 8.1 |
-| `pair_07_blank_frame` | Hard Negative | `INSUFFICIENT_FEATURES` | 0 | N/A | N/A | 51.71 ± 8.62 |
+| `pair_01_baseline` | Baseline | `SUCCESS` | 101 | 0.88 | 0.44 | 276.78 ± 7.23 |
+| `pair_02_brightness_dark` | Illumination | `SUCCESS` | 84 | 0.69 | 0.35 | 281.38 ± 23.42 |
+| `pair_03_brightness_bright` | Illumination | `SUCCESS` | 21 | 15.84 | 7.92 | 282.12 ± 4.84 |
+| `pair_04_rotation_20deg` | Geometric | `SUCCESS` | 65 | 2.72 | 1.36 | 309.74 ± 19.34 |
+| `pair_05_sensor_noise` | Sensor Noise | `SUCCESS` | 70 | 2.13 | 1.07 | 317.91 ± 11.27 |
+| `pair_06_uncorrelated_noise` | Hard Negative | `NO_CORRESPONDENCE` | 0 | N/A | N/A | 363.99 ± 24.31 |
+| `pair_07_blank_frame` | Hard Negative | `INSUFFICIENT_FEATURES` | 0 | N/A | N/A | 189.43 ± 29.67 |

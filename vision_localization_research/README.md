@@ -25,6 +25,7 @@ vision_localization_research/
 ├── requirements.txt        # Pinned dependencies
 ├── pyproject.toml          # Build and test configuration
 ├── run_dashboard.bat       # One-click Windows dashboard launcher
+├── run_benchmarks.bat      # One-click Windows benchmark runner
 ├── experiments/            # Benchmark CSV, plots, and markdown summaries
 ├── scripts/
 │   └── run_benchmarks.py   # Automated reproducible benchmark runner

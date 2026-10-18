@@ -227,10 +227,34 @@ st.write(
     "Image correspondence alone does not establish geographic localization without validated sensor scale and orientation."
 )
 
-if plots_path.is_file():
-    st.image(str(plots_path), caption="Benchmark Performance Summary: Inlier Counts & Steady-State Latencies", use_container_width=True)
-else:
-    st.info("Benchmark summary plot not found. Run `scripts/run_benchmarks.py` to regenerate.")
+tab1, tab2 = st.tabs(["🖼️ Inspect Trial Correspondence", "📊 Benchmark Performance Summary"])
+
+with tab1:
+    selected_pair_id = st.selectbox(
+        "Select Trial to Inspect:",
+        [r.pair_id for r in records],
+        help="Select any trial to view actual feature correspondence lines between query and reference."
+    )
+    selected_record = next(r for r in records if r.pair_id == selected_pair_id)
+    vis_img_path = project_root / "experiments" / "plots" / f"matches_{selected_pair_id}.png"
+
+    if vis_img_path.is_file():
+        st.image(
+            str(vis_img_path),
+            caption=f"Visual Correspondence for {selected_pair_id} ({selected_record.category}) — {selected_record.geometric_inliers} Inliers",
+            use_container_width=True
+        )
+    else:
+        if selected_record.status == "SUCCESS":
+            st.info(f"Visual plot for {selected_pair_id} not yet generated. Run `scripts/run_benchmarks.py` to generate.")
+        else:
+            st.warning(f"Trial '{selected_pair_id}' status is {selected_record.status} (0 inliers). No correspondence lines exist as false matches were rejected.")
+
+with tab2:
+    if plots_path.is_file():
+        st.image(str(plots_path), caption="Benchmark Performance Summary: Inlier Counts & Steady-State Latencies", use_container_width=True)
+    else:
+        st.info("Benchmark summary plot not found. Run `scripts/run_benchmarks.py` to regenerate.")
 
 st.markdown("---")
 

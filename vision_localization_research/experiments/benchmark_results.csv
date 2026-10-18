@@ -1,8 +1,8 @@
 pair_id,category,description,status,keypoints_query,keypoints_ref,tentative_matches,ratio_matches,geometric_inliers,inlier_ratio,timing_repetitions,steady_state_latency_median_ms,steady_state_latency_std_ms,independent_checkpoints_tested,pixel_reprojection_rmse,synthetic_grid_error_m,geometric_verification_success
-pair_01_baseline,Baseline,Standard translation crop with identical visual conditions,SUCCESS,205,1202,205,108,101,0.9352,5,56.96,3.51,25,0.881,0.441,True
-pair_02_brightness_dark,Illumination,Simulated low-light (45% reduction in brightness),SUCCESS,122,1202,122,86,84,0.9767,5,53.45,6.63,25,0.692,0.346,True
-pair_03_brightness_bright,Illumination,Simulated high glare / overexposure (+35% intensity),SUCCESS,202,1202,202,31,21,0.6774,5,64.67,3.31,25,15.839,7.92,True
-pair_04_rotation_20deg,Geometric,20-degree in-plane rotation,SUCCESS,216,1202,216,70,65,0.9286,5,63.21,5.79,25,2.716,1.358,True
-pair_05_sensor_noise,Sensor Noise,Additive zero-mean Gaussian sensor noise (sigma=20),SUCCESS,755,1202,755,77,70,0.9091,5,81.97,4.45,25,2.131,1.066,True
-pair_06_uncorrelated_noise,Hard Negative,Uncorrelated random noise canvas (expected zero match),NO_CORRESPONDENCE,1013,1202,1013,0,0,0.0,5,79.93,8.1,0,,,False
-pair_07_blank_frame,Hard Negative,Completely blank zero-feature frame,INSUFFICIENT_FEATURES,0,1202,0,0,0,0.0,5,51.71,8.62,0,,,False
+pair_01_baseline,Baseline,Standard translation crop with identical visual conditions,SUCCESS,205,1202,205,108,101,0.9352,5,276.78,7.23,25,0.881,0.441,True
+pair_02_brightness_dark,Illumination,Simulated low-light (45% reduction in brightness),SUCCESS,122,1202,122,86,84,0.9767,5,281.38,23.42,25,0.692,0.346,True
+pair_03_brightness_bright,Illumination,Simulated high glare / overexposure (+35% intensity),SUCCESS,202,1202,202,31,21,0.6774,5,282.12,4.84,25,15.839,7.92,True
+pair_04_rotation_20deg,Geometric,20-degree in-plane rotation,SUCCESS,216,1202,216,70,65,0.9286,5,309.74,19.34,25,2.716,1.358,True
+pair_05_sensor_noise,Sensor Noise,Additive zero-mean Gaussian sensor noise (sigma=20),SUCCESS,755,1202,755,77,70,0.9091,5,317.91,11.27,25,2.131,1.066,True
+pair_06_uncorrelated_noise,Hard Negative,Uncorrelated random noise canvas (expected zero match),NO_CORRESPONDENCE,1013,1202,1013,0,0,0.0,5,363.99,24.31,0,,,False
+pair_07_blank_frame,Hard Negative,Completely blank zero-feature frame,INSUFFICIENT_FEATURES,0,1202,0,0,0,0.0,5,189.43,29.67,0,,,False
