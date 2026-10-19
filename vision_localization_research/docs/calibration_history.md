@@ -38,3 +38,4 @@
 [2026-10-18T18:31:38+05:30] CALIB-CALC #038 // test(coverage): expand unit test assertions for degenerate camera homographies // RES: OK
 [2026-10-18T20:54:50+05:30] CALIB-CALC #039 // docs(evaluator): add quick answers for edge compute power budget and thermal limits // RES: OK
 [2026-10-19T10:20:31+05:30] CALIB-CALC #040 // perf(spline): vectorize Catmull-Rom tangent computation across 400 trajectory steps // RES: OK
+[2026-10-19T10:38:02+05:30] CALIB-CALC #041 // perf(matcher): tune ORB pyramid scale factor to 1.2 for mountain ridge tracking // RES: OK
