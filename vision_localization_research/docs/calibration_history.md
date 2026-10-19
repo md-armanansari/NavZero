@@ -40,3 +40,4 @@
 [2026-10-19T10:20:31+05:30] CALIB-CALC #040 // perf(spline): vectorize Catmull-Rom tangent computation across 400 trajectory steps // RES: OK
 [2026-10-19T10:38:02+05:30] CALIB-CALC #041 // perf(matcher): tune ORB pyramid scale factor to 1.2 for mountain ridge tracking // RES: OK
 [2026-10-19T12:40:06+05:30] CALIB-CALC #042 // test(failsafe): verify state machine timeout on intermittent optical occlusion // RES: OK
+[2026-10-19T14:40:32+05:30] CALIB-CALC #043 // docs(hud): clarify pitch ladder angle scaling in cockpit avionics specification // RES: OK
