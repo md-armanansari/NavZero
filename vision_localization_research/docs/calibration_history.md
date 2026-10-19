@@ -42,3 +42,4 @@
 [2026-10-19T12:40:06+05:30] CALIB-CALC #042 // test(failsafe): verify state machine timeout on intermittent optical occlusion // RES: OK
 [2026-10-19T14:40:32+05:30] CALIB-CALC #043 // docs(hud): clarify pitch ladder angle scaling in cockpit avionics specification // RES: OK
 [2026-10-19T15:19:42+05:30] CALIB-CALC #044 // refactor(geo): optimize affine forward projection cache for high-frequency updates // RES: OK
+[2026-10-19T17:04:43+05:30] CALIB-CALC #045 // fix(telemetry): clamp heading wrap-around at 360 degrees in packet framing // RES: OK
