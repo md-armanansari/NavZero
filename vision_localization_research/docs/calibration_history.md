@@ -44,3 +44,4 @@
 [2026-10-19T15:19:42+05:30] CALIB-CALC #044 // refactor(geo): optimize affine forward projection cache for high-frequency updates // RES: OK
 [2026-10-19T17:04:43+05:30] CALIB-CALC #045 // fix(telemetry): clamp heading wrap-around at 360 degrees in packet framing // RES: OK
 [2026-10-19T17:38:27+05:30] CALIB-CALC #046 // test(benchmarks): add unit test for zero-drift homography matrix decomposition // RES: OK
+[2026-10-20T10:16:41+05:30] CALIB-CALC #047 // docs(gcs): document keyboard shortcuts for sensor payload switching in presentation guide // RES: OK
