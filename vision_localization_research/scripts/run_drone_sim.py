@@ -108,18 +108,21 @@ def run_drone_mission_sim():
     sat_map = generate_recon_map()
     map_h, map_w = sat_map.shape[:2]
 
-    # Georeference: Base center at Lat 34.1526, Lon 77.5771, 0.5m/px
+    # Georeference: Map covers roughly 1600x1200 pixels
+    # Origin at top-left (77.5500, 34.1700), pixel size ~1 meter
     geo = AffineTransform(
-        origin_x=77.5600,
-        origin_y=34.1650,
-        a=0.00001,
+        origin_x=77.5500,
+        origin_y=34.1700,
+        a=0.00002,
         b=0.0,
         d=0.0,
-        e=-0.00001,
+        e=-0.00002,
     )
 
-    matcher = VisualFeatureMatcher(max_features=600, ratio_threshold=0.75)
-    autopilot = SimulatedDroneAutopilot()
+    matcher = VisualFeatureMatcher(max_features=400, ratio_threshold=0.75)
+    # Start drone near center of map: (px, py) ~= (800, 600)
+    # 77.5500 + 800 * 0.00002 = 77.5660, 34.1700 - 600 * 0.00002 = 34.1580
+    autopilot = SimulatedDroneAutopilot(start_lat=34.1580, start_lon=77.5660)
 
     # Pre-extract map keypoints
     map_gray = cv2.cvtColor(sat_map, cv2.COLOR_BGR2GRAY)
@@ -150,17 +153,19 @@ def run_drone_mission_sim():
 
         # Clamp camera view to map boundaries
         fov_rad = 140
+        # If drone flies near edge of map, bounce / loop back to center
+        if px_int < fov_rad or px_int > (map_w - fov_rad) or py_int < fov_rad or py_int > (map_h - fov_rad):
+            autopilot.lat = 34.1580
+            autopilot.lon = 77.5660
+            px, py = geo.map_to_pixel(autopilot.lon, autopilot.lat)
+            px_int, py_int = int(round(px)), int(round(py))
+
         x1 = max(0, px_int - fov_rad)
         y1 = max(0, py_int - fov_rad)
         x2 = min(map_w, px_int + fov_rad)
         y2 = min(map_h, py_int + fov_rad)
 
         cam_frame = sat_map[y1:y2, x1:x2].copy()
-        if cam_frame.shape[0] < 50 or cam_frame.shape[1] < 50:
-            # Wrap flight around if reached border
-            autopilot.lat = 34.1526
-            autopilot.lon = 77.5771
-            continue
 
         # Extract camera features and match
         cam_gray = cv2.cvtColor(cam_frame, cv2.COLOR_BGR2GRAY)
