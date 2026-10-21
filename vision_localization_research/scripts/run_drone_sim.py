@@ -109,7 +109,14 @@ def run_drone_mission_sim():
     map_h, map_w = sat_map.shape[:2]
 
     # Georeference: Base center at Lat 34.1526, Lon 77.5771, 0.5m/px
-    geo = AffineTransform(a=77.5600, b=0.00001, c=0.0, d=34.1650, e=0.0, f=-0.00001)
+    geo = AffineTransform(
+        origin_x=77.5600,
+        origin_y=34.1650,
+        a=0.00001,
+        b=0.0,
+        d=0.0,
+        e=-0.00001,
+    )
 
     matcher = VisualFeatureMatcher(max_features=600, ratio_threshold=0.75)
     autopilot = SimulatedDroneAutopilot()
@@ -138,7 +145,7 @@ def run_drone_mission_sim():
         autopilot.update_physics(dt)
 
         # Calculate current drone pixel on map from coordinates
-        px, py = geo.geo_to_pixel(autopilot.lon, autopilot.lat)
+        px, py = geo.map_to_pixel(autopilot.lon, autopilot.lat)
         px_int, py_int = int(round(px)), int(round(py))
 
         # Clamp camera view to map boundaries
@@ -191,7 +198,7 @@ def run_drone_mission_sim():
 
         # Draw trajectory breadcrumbs
         for b_lat, b_lon in autopilot.breadcrumbs[-60:]:
-            bx, by = geo.geo_to_pixel(b_lon, b_lat)
+            bx, by = geo.map_to_pixel(b_lon, b_lat)
             cv2.circle(map_disp, (int(bx * scale_x), int(by * scale_y)), 2, (0, 255, 255), -1)
 
         # Draw current drone position on map
