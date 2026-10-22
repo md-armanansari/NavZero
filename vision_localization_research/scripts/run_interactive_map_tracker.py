@@ -24,23 +24,30 @@ from vision_loc.georeference import AffineTransform
 
 # Global interactive click coordinates
 user_click_target = None
-window_name = "Interactive Ladakh Defense Tracker - CLICK ANYWHERE TO DISPATCH DRONE"
+user_set_home_target = None
+window_name = "Interactive Defense Tracker - LEFT CLICK: Dispatch | RIGHT CLICK: Set Home"
 
 
 def on_mouse_click(event, x, y, flags, param):
-    """Detects when the user clicks on the right-side map."""
-    global user_click_target
-    if event == cv2.EVENT_LBUTTONDOWN:
-        # Check if click is on the right-side map area (x >= 520)
-        disp_h = 520
-        map_offset_x = disp_h
-        if x >= map_offset_x:
-            # Convert screen click coordinates back to original map image scale
-            scale_map = param["scale_map"]
-            orig_map_x = int((x - map_offset_x) / scale_map)
-            orig_map_y = int(y / scale_map)
+    """Detects mouse clicks on the right-side map."""
+    global user_click_target, user_set_home_target
+    disp_h = 520
+    map_offset_x = disp_h
+
+    if x >= map_offset_x:
+        scale_map = param["scale_map"]
+        orig_map_x = int((x - map_offset_x) / scale_map)
+        orig_map_y = int(y / scale_map)
+
+        # LEFT CLICK: Teleport / Dispatch Drone
+        if event == cv2.EVENT_LBUTTONDOWN:
             user_click_target = (orig_map_x, orig_map_y)
-            print(f"\n[INTERACTIVE USER DISPATCH] Mouse clicked at map coordinates: ({orig_map_x}, {orig_map_y})")
+            print(f"\n[DISPATCH] Drone sent to: ({orig_map_x}, {orig_map_y})")
+
+        # RIGHT CLICK: Set NEW Home Base / Runway Location!
+        elif event == cv2.EVENT_RBUTTONDOWN:
+            user_set_home_target = (orig_map_x, orig_map_y)
+            print(f"\n[NEW HOME BASE SET] Relocated Home Base to: ({orig_map_x}, {orig_map_y})")
 
 
 def run_interactive_map_tracker():
@@ -117,7 +124,12 @@ def run_interactive_map_tracker():
         dt = t_now - t_prev
         t_prev = t_now
 
-        # Handle user mouse click dispatch
+        # Handle user mouse click dispatch (Left Click = Move Drone | Right Click = Change Home Base)
+        global user_set_home_target
+        if user_set_home_target is not None:
+            home_x, home_y = user_set_home_target
+            user_set_home_target = None
+
         if user_click_target is not None:
             new_x, new_y = user_click_target
             # Clamp inside boundaries
@@ -253,7 +265,7 @@ def run_interactive_map_tracker():
 
         # Footer
         footer = np.zeros((30, combined_view.shape[1], 3), dtype=np.uint8)
-        cv2.putText(footer, "CLICK ANYWHERE ON MAP TO TELEPORT DRONE | [J] Jam GPS | [R] Return-to-Home | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
+        cv2.putText(footer, "LEFT CLICK: Move Drone | RIGHT CLICK: Set NEW Home Base | [R] Return | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
         final_gui = np.vstack([final_gui, footer])
 
         cv2.imshow(window_name, final_gui)
