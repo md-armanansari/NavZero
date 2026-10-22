@@ -127,15 +127,25 @@ def run_interactive_map_tracker():
             user_click_target = None
             rth_active = False
 
-        # Drone steering
+        # Drone steering with REALISTIC VISION-COUPLED PHYSICS:
+        # If inliers < 4 (over blank water/clouds), the camera is BLIND!
+        # Without vision, wind causes IMU drift, causing the drone to wander/drift off course!
         if rth_active:
-            # Fly back to home base
             dx = home_x - drone_x
             dy = home_y - drone_y
             dist_to_home = math.hypot(dx, dy)
-            if dist_to_home > 10:
-                heading_deg = math.degrees(math.atan2(dy, dx))
-                speed_px_per_sec = 50.0
+
+            if dist_to_home > 12:
+                # If we have optical lock (inliers >= 4), vision corrects heading straight home!
+                if inliers_count >= 4:
+                    heading_deg = math.degrees(math.atan2(dy, dx))
+                    speed_px_per_sec = 45.0
+                else:
+                    # BLIND FLIGHT (Ocean/Cloud): IMU drift causes random course deviation!
+                    # The drone drifts with the wind and CANNOT steer straight!
+                    drift_noise = np.random.uniform(-35.0, 35.0)
+                    heading_deg = (math.degrees(math.atan2(dy, dx)) + drift_noise) % 360.0
+                    speed_px_per_sec = 30.0
             else:
                 speed_px_per_sec = 0.0
 
