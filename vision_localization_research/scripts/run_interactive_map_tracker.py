@@ -57,9 +57,10 @@ def run_interactive_map_tracker():
     print(" 5. Press [R] to engage Visual Return-to-Home.")
     print(" 6. Press [Q] or [ESC] to exit.\n")
 
-    img_path = repo_root / "data" / "ladakh_zanskar_map.jpg"
+    # Load the active map file set by switch_map.bat
+    img_path = repo_root / "data" / "real_aerial_orthophoto.jpg"
     if not img_path.exists():
-        img_path = repo_root / "data" / "real_aerial_orthophoto.jpg"
+        img_path = repo_root / "data" / "ladakh_zanskar_map.jpg"
 
     real_sat_map = cv2.imread(str(img_path))
     if real_sat_map is None:
