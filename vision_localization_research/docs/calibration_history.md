@@ -54,3 +54,4 @@
 [2026-10-21T15:27:47+05:30] CALIB-CALC #054 // docs(mavlink): expand STANAG-4586 packet framing definition and byte layout // RES: OK
 [2026-10-22T12:05:45+05:30] CALIB-CALC #055 // fix(matcher): guard against singular matrix exception in cv2.findHomography // RES: OK
 [2026-10-22T13:01:23+05:30] CALIB-CALC #056 // test(sensor): assert IR White-Hot colormap preserves luminance gradient dynamics // RES: OK
+[2026-10-22T15:04:49+05:30] CALIB-CALC #057 // refactor(core): organize sensor mode enums and failsafe state classes // RES: OK
