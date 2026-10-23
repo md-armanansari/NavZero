@@ -57,3 +57,4 @@
 [2026-10-22T15:04:49+05:30] CALIB-CALC #057 // refactor(core): organize sensor mode enums and failsafe state classes // RES: OK
 [2026-10-22T15:39:40+05:30] CALIB-CALC #058 // docs(readme): refine tactical combat mission descriptions and threat levels // RES: OK
 [2026-10-22T19:01:30+05:30] CALIB-CALC #059 // test(dispatcher): add multi-waypoint queue capacity boundary test // RES: OK
+[2026-10-23T10:46:21+05:30] CALIB-CALC #060 // perf(matcher): reduce Hamming distance threshold for high-altitude reconnaissance // RES: OK
