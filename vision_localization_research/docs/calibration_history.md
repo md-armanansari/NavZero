@@ -59,3 +59,4 @@
 [2026-10-22T19:01:30+05:30] CALIB-CALC #059 // test(dispatcher): add multi-waypoint queue capacity boundary test // RES: OK
 [2026-10-23T10:46:21+05:30] CALIB-CALC #060 // perf(matcher): reduce Hamming distance threshold for high-altitude reconnaissance // RES: OK
 [2026-10-23T11:03:07+05:30] CALIB-CALC #061 // fix(hud): correct heading tape cardinal direction text alignment // RES: OK
+[2026-10-23T14:59:17+05:30] CALIB-CALC #062 // docs(eval): update CEP50 and CEP95 statistical measurement methodology // RES: OK
