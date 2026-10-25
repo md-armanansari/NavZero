@@ -68,3 +68,4 @@
 [2026-10-24T16:15:28+05:30] CALIB-CALC #068 // perf(homography): optimize inlier mask boolean indexing for 2000 feature points // RES: OK
 [2026-10-24T20:38:35+05:30] CALIB-CALC #069 // test(failsafe): assert autonomous loiter activation when vision inliers drop below 12 // RES: OK
 [2026-10-25T10:16:41+05:30] CALIB-CALC #070 // fix(geo): correct geodetic coordinate precision formatting in telemetry log export // RES: OK
+[2026-10-25T11:32:22+05:30] CALIB-CALC #071 // test(cockpit): verify artificial horizon pitch ladder roll compensation at 30 deg // RES: OK
