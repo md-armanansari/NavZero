@@ -69,3 +69,4 @@
 [2026-10-24T20:38:35+05:30] CALIB-CALC #069 // test(failsafe): assert autonomous loiter activation when vision inliers drop below 12 // RES: OK
 [2026-10-25T10:16:41+05:30] CALIB-CALC #070 // fix(geo): correct geodetic coordinate precision formatting in telemetry log export // RES: OK
 [2026-10-25T11:32:22+05:30] CALIB-CALC #071 // test(cockpit): verify artificial horizon pitch ladder roll compensation at 30 deg // RES: OK
+[2026-10-25T12:27:09+05:30] CALIB-CALC #072 // docs(setup): add troubleshooting tips for Windows PowerShell execution policy // RES: OK
