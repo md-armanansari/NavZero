@@ -130,7 +130,7 @@ def run_tactical_mission_dispatcher():
         if home_point is not None:
             home_x, home_y = float(home_point[0]), float(home_point[1])
 
-        # ----------------- FLIGHT AUTONOMOUS STEERING -----------------
+        # ----------------- FLIGHT AUTONOMOUS STEERING (COUPLED TO OPTICAL VISION) -----------------
         dest_x, dest_y = None, None
 
         if flight_phase == "CRUISE_TO_TARGET" and target_point is not None:
@@ -144,18 +144,28 @@ def run_tactical_mission_dispatcher():
             dist_to_dest = math.hypot(dx, dy)
 
             if dist_to_dest > 8:
-                # Steer towards destination
-                heading_deg = math.degrees(math.atan2(dy, dx))
-                speed_px_per_sec = 45.0
+                # REALISTIC SENSOR FUSION PHYSICS:
+                # 1. If optical landmarks exist (inliers >= 4) OR GPS is active: precision steering!
+                if (not jammed) or (inliers_count >= 4):
+                    heading_deg = math.degrees(math.atan2(dy, dx))
+                    speed_px_per_sec = 45.0
+                else:
+                    # 2. OVER OCEAN / FEATURELESS WATER WITH GPS JAMMED:
+                    # The drone is BLIND! It tries to steer via IMU dead-reckoning, but wind drift
+                    # causes random deviations (+/- 30 deg). It WANDERS and CANNOT hit precision!
+                    drift_noise = np.random.uniform(-30.0, 30.0)
+                    heading_deg = (math.degrees(math.atan2(dy, dx)) + drift_noise) % 360.0
+                    speed_px_per_sec = 25.0
             else:
-                # Arrived at destination!
-                speed_px_per_sec = 0.0
-                if flight_phase == "CRUISE_TO_TARGET":
-                    flight_phase = "LOITER_AT_TARGET"
-                    print("\n[MISSION STATUS] TARGET REACHED! Loitering over objective.")
-                elif flight_phase == "RETURNING_HOME":
-                    flight_phase = "TOUCHDOWN_AT_HOME"
-                    print("\n[MISSION STATUS] HOME BASE REACHED! Touchdown confirmed.")
+                # Arrived at destination (Only possible if vision locks on or GPS is on!)
+                if (not jammed) or (inliers_count >= 4):
+                    speed_px_per_sec = 0.0
+                    if flight_phase == "CRUISE_TO_TARGET":
+                        flight_phase = "LOITER_AT_TARGET"
+                        print("\n[MISSION STATUS] TARGET REACHED VIA OPTICAL LOCK! Loitering.")
+                    elif flight_phase == "RETURNING_HOME":
+                        flight_phase = "TOUCHDOWN_AT_HOME"
+                        print("\n[MISSION STATUS] HOME BASE REACHED VIA OPTICAL LOCK! Touchdown confirmed.")
 
         rad = math.radians(heading_deg)
         drone_x += speed_px_per_sec * math.cos(rad) * dt
