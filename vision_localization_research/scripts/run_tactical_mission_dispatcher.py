@@ -145,17 +145,22 @@ def run_tactical_mission_dispatcher():
 
             if dist_to_dest > 8:
                 # REALISTIC SENSOR FUSION PHYSICS:
-                # 1. If optical landmarks exist (inliers >= 4) OR GPS is active: precision steering!
-                if (not jammed) or (inliers_count >= 4):
+                # 1. GPS ACTIVE: Satellites tell the drone exactly where it is!
+                if not jammed:
+                    heading_deg = math.degrees(math.atan2(dy, dx))
+                    speed_px_per_sec = 45.0
+                # 2. GPS JAMMED BUT CAMERA SEES LANDMARKS (Inliers >= 4):
+                # Computer Vision replaces GPS and navigates with precision!
+                elif inliers_count >= 4:
                     heading_deg = math.degrees(math.atan2(dy, dx))
                     speed_px_per_sec = 45.0
                 else:
-                    # 2. OVER OCEAN / FEATURELESS WATER WITH GPS JAMMED:
-                    # The drone is BLIND! It tries to steer via IMU dead-reckoning, but wind drift
-                    # causes random deviations (+/- 30 deg). It WANDERS and CANNOT hit precision!
-                    drift_noise = np.random.uniform(-30.0, 30.0)
-                    heading_deg = (math.degrees(math.atan2(dy, dx)) + drift_noise) % 360.0
-                    speed_px_per_sec = 25.0
+                    # 3. GPS JAMMED AND CAMERA IS BLIND (Inliers < 4 over water/clouds):
+                    # The drone has NO GPS and NO VISION. It is COMPLETELY LOST!
+                    # It cannot know its location. It FREEZES forward navigation and drifts into emergency hover!
+                    drift_noise = np.random.uniform(-45.0, 45.0)
+                    heading_deg = (heading_deg + drift_noise) % 360.0
+                    speed_px_per_sec = 5.0 # Uncontrolled drifting in the wind!
             else:
                 # Arrived at destination (Only possible if vision locks on or GPS is on!)
                 if (not jammed) or (inliers_count >= 4):
