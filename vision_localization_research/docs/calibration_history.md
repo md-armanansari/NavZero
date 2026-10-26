@@ -74,3 +74,4 @@
 [2026-10-25T14:01:53+05:30] CALIB-CALC #074 // perf(dispatcher): cache tactical map rendering primitives to avoid redundant draws // RES: OK
 [2026-10-25T17:10:58+05:30] CALIB-CALC #075 // test(mavlink): assert GlobalPositionInt coordinate scaling factor matches 1e7 standard // RES: OK
 [2026-10-25T19:18:12+05:30] CALIB-CALC #076 // fix(engine): initialize default crosswind velocity to zero on engine boot // RES: OK
+[2026-10-26T11:41:36+05:30] CALIB-CALC #077 // style(terminal): standardize ANSI color output across benchmark CLI utilities // RES: OK
