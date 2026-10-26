@@ -77,3 +77,4 @@
 [2026-10-26T11:41:36+05:30] CALIB-CALC #077 // style(terminal): standardize ANSI color output across benchmark CLI utilities // RES: OK
 [2026-10-26T16:53:02+05:30] CALIB-CALC #078 // test(coverage): expand unit test assertions for degenerate camera homographies // RES: OK
 [2026-10-26T17:42:47+05:30] CALIB-CALC #079 // docs(evaluator): add quick answers for edge compute power budget and thermal limits // RES: OK
+[2026-10-26T17:59:06+05:30] CALIB-CALC #080 // perf(spline): vectorize Catmull-Rom tangent computation across 400 trajectory steps // RES: OK
