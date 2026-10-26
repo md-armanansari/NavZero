@@ -88,7 +88,8 @@ def run_tactical_mission_dispatcher():
         e=-0.005,
     )
 
-    matcher = VisualFeatureMatcher(max_features=600, ratio_threshold=0.75, ransac_reproj_threshold=5.0)
+    # Use max_features=1500 and ratio_threshold=0.82 to robustly match even subtle agricultural fields and terrain
+    matcher = VisualFeatureMatcher(max_features=1500, ratio_threshold=0.82, ransac_reproj_threshold=6.0)
 
     # Pre-extract map landmarks
     print("[INFO] Indexing terrain landmarks from map...")
