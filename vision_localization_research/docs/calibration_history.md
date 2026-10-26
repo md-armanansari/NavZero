@@ -75,3 +75,4 @@
 [2026-10-25T17:10:58+05:30] CALIB-CALC #075 // test(mavlink): assert GlobalPositionInt coordinate scaling factor matches 1e7 standard // RES: OK
 [2026-10-25T19:18:12+05:30] CALIB-CALC #076 // fix(engine): initialize default crosswind velocity to zero on engine boot // RES: OK
 [2026-10-26T11:41:36+05:30] CALIB-CALC #077 // style(terminal): standardize ANSI color output across benchmark CLI utilities // RES: OK
+[2026-10-26T16:53:02+05:30] CALIB-CALC #078 // test(coverage): expand unit test assertions for degenerate camera homographies // RES: OK
