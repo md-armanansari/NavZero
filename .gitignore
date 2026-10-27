@@ -37,3 +37,6 @@ venv.bak/
 .coverage
 htmlcov/
 .venv_windows_backup/
+*.pdf
+*.log
+
