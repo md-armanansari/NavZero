@@ -26,6 +26,12 @@ from navzero.core.scenarios import (
     apply_scenario_to_engine
 )
 
+from navzero.core.defense_benchmark import (
+    ScenarioMetrics,
+    BenchmarkReport,
+    DefenseBenchmarkRunner
+)
+
 __all__ = [
     "NavZeroFlightEngine",
     "SensorMode",
@@ -42,6 +48,9 @@ __all__ = [
     "DEFENSE_SCENARIOS",
     "get_combat_scenarios",
     "get_scenario_by_id",
-    "apply_scenario_to_engine"
+    "apply_scenario_to_engine",
+    "ScenarioMetrics",
+    "BenchmarkReport",
+    "DefenseBenchmarkRunner"
 ]
 
