@@ -24,15 +24,16 @@ from vision_loc.feature_matcher import VisualFeatureMatcher
 from vision_loc.georeference import AffineTransform
 
 # Global interactive coordinates
-target_point = None      # Left click: where to go
+target_point = None      # Current target waypoint
 home_point = None        # Right click: home address
+waypoint_queue = []      # Multi-waypoint mission routing queue
 flight_phase = "IDLE"    # "CRUISE_TO_TARGET", "LOITER_AT_TARGET", "RETURNING_HOME", "IDLE"
-window_name = "Tactical Mission Dispatcher - RIGHT-CLICK: Home | LEFT-CLICK: Target | [R] Recall"
+window_name = "Tactical Mission Dispatcher - RIGHT-CLICK: Home | LEFT-CLICK: Add Waypoints | [R] Recall | [C] Clear"
 
 
 def on_mouse_click(event, x, y, flags, param):
     """Handles user mission planning clicks."""
-    global target_point, home_point, flight_phase
+    global target_point, home_point, flight_phase, waypoint_queue
     disp_h = 520
     header_h = 65
     map_offset_x = disp_h
@@ -56,11 +57,16 @@ def on_mouse_click(event, x, y, flags, param):
             home_point = (orig_map_x, orig_map_y)
             print(f"\n[MISSION UPDATE] HOME BASE SET AT: ({orig_map_x}, {orig_map_y})")
 
-        # LEFT CLICK: Set Mission Target & Launch Drone
+        # LEFT CLICK: Set / Queue Mission Target Waypoints
         elif event == cv2.EVENT_LBUTTONDOWN:
-            target_point = (orig_map_x, orig_map_y)
-            flight_phase = "CRUISE_TO_TARGET"
-            print(f"\n[MISSION LAUNCH] DRONE DISPATCHED TO TARGET: ({orig_map_x}, {orig_map_y})")
+            if target_point is None or flight_phase in ("IDLE", "LOITER_AT_TARGET", "TOUCHDOWN_AT_HOME"):
+                target_point = (orig_map_x, orig_map_y)
+                flight_phase = "CRUISE_TO_TARGET"
+                print(f"\n[MISSION LAUNCH] DRONE DISPATCHED TO WP-1: ({orig_map_x}, {orig_map_y})")
+            else:
+                waypoint_queue.append((orig_map_x, orig_map_y))
+                wp_num = len(waypoint_queue) + 1
+                print(f"\n[WAYPOINT QUEUED] WP-{wp_num} QUEUED AT: ({orig_map_x}, {orig_map_y})")
 
 
 def run_tactical_mission_dispatcher():
@@ -196,13 +202,18 @@ def run_tactical_mission_dispatcher():
             else:
                 # Arrived at destination (Only possible if vision locks on or GPS is on!)
                 if (not jammed) or (inliers_count >= 4):
-                    speed_px_per_sec = 0.0
-                    if flight_phase == "CRUISE_TO_TARGET":
-                        flight_phase = "LOITER_AT_TARGET"
-                        print("\n[MISSION STATUS] TARGET REACHED VIA OPTICAL LOCK! Loitering.")
-                    elif flight_phase == "RETURNING_HOME":
-                        flight_phase = "TOUCHDOWN_AT_HOME"
-                        print("\n[MISSION STATUS] HOME BASE REACHED VIA OPTICAL LOCK! Touchdown confirmed.")
+                    if len(waypoint_queue) > 0:
+                        target_point = waypoint_queue.pop(0)
+                        flight_phase = "CRUISE_TO_TARGET"
+                        print(f"\n[NEXT OBJECTIVE] Steered to Waypoint: {target_point} ({len(waypoint_queue)} remaining in queue)")
+                    else:
+                        speed_px_per_sec = 0.0
+                        if flight_phase == "CRUISE_TO_TARGET":
+                            flight_phase = "LOITER_AT_TARGET"
+                            print("\n[MISSION STATUS] ALL WAYPOINTS COMPLETED VIA OPTICAL LOCK! Loitering.")
+                        elif flight_phase == "RETURNING_HOME":
+                            flight_phase = "TOUCHDOWN_AT_HOME"
+                            print("\n[MISSION STATUS] HOME BASE REACHED VIA OPTICAL LOCK! Touchdown confirmed.")
 
         rad = math.radians(heading_deg)
         drone_x += speed_px_per_sec * math.cos(rad) * dt
@@ -268,13 +279,20 @@ def run_tactical_mission_dispatcher():
         cv2.drawMarker(map_disp, (int(home_x), int(home_y)), (0, 255, 255), cv2.MARKER_SQUARE, 22, 2)
         cv2.putText(map_disp, "HOME BASE", (int(home_x) + 12, int(home_y) + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
 
-        # 2. Draw Target Marker (Red Diamond) if set
+        # 2. Draw Target Marker & Queued Flight Plan
         if target_point is not None:
             tx, ty = target_point
             cv2.drawMarker(map_disp, (tx, ty), (0, 0, 255), cv2.MARKER_DIAMOND, 22, 2)
-            cv2.putText(map_disp, "TARGET", (tx + 12, ty + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-            # Draw mission vector line
+            cv2.putText(map_disp, "TARGET [WP-1]", (tx + 12, ty + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
             cv2.line(map_disp, (int(drone_x), int(drone_y)), (tx, ty), (0, 165, 255), 1, cv2.LINE_AA)
+
+            # Draw lines and numbered markers through all queued waypoints
+            prev_pt = (tx, ty)
+            for idx, (wqx, wqy) in enumerate(waypoint_queue):
+                cv2.circle(map_disp, (wqx, wqy), 6, (0, 140, 255), -1)
+                cv2.putText(map_disp, f"WP-{idx+2}", (wqx + 10, wqy + 4), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 140, 255), 1)
+                cv2.line(map_disp, prev_pt, (wqx, wqy), (0, 140, 255), 1, cv2.LINE_AA)
+                prev_pt = (wqx, wqy)
 
         # 3. Draw Breadcrumbs Trail
         for bx, by in breadcrumbs:
@@ -300,7 +318,7 @@ def run_tactical_mission_dispatcher():
 
         # Header HUD
         header = np.zeros((65, combined_view.shape[1], 3), dtype=np.uint8)
-        gps_txt = "GPS: JAMMED [0 SATS]" if jammed else "GPS: ACTIVE [14 SATS 3D FIX]"
+        gps_txt = "GNSS: JAMMED [0 SATS]" if jammed else "GNSS: ACTIVE [14 SATS 3D FIX]"
         gps_col = (0, 0, 255) if jammed else (0, 255, 0)
 
         # Update re-acquisition visual alert timer
@@ -310,8 +328,8 @@ def run_tactical_mission_dispatcher():
         # Status text
         status_descriptions = {
             "IDLE": "READY (WAITING FOR TARGET)",
-            "CRUISE_TO_TARGET": "EN ROUTE TO TARGET OBJECTIVE",
-            "LOITER_AT_TARGET": "TARGET REACHED - LOITERING OVER AREA",
+            "CRUISE_TO_TARGET": f"EN ROUTE ({len(waypoint_queue) + 1} WAYPOINTS REMAINING)",
+            "LOITER_AT_TARGET": "MISSION COMPLETE - LOITERING OVER AREA",
             "RETURNING_HOME": "RECALL ACTIVE: RETURNING TO HOME BASE",
             "TOUCHDOWN_AT_HOME": "TOUCHDOWN CONFIRMED AT HOME BASE"
         }
@@ -335,7 +353,7 @@ def run_tactical_mission_dispatcher():
 
         # Footer instructions
         footer = np.zeros((30, combined_view.shape[1], 3), dtype=np.uint8)
-        cv2.putText(footer, "RIGHT-CLICK: Set Home | LEFT-CLICK: Set Target | [R] Recall Drone Home | [J] Jam GPS | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
+        cv2.putText(footer, "RIGHT-CLICK: Home | LEFT-CLICK: Add Waypoints | [C] Clear | [R] Recall | [J] Jam | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
         final_gui = np.vstack([final_gui, footer])
 
         cv2.imshow(window_name, final_gui)
@@ -349,6 +367,11 @@ def run_tactical_mission_dispatcher():
         elif key == ord("r") or key == ord("R"):
             flight_phase = "RETURNING_HOME"
             print("[EVENT] RECALL COMMAND: Drone returning to Home Base!")
+        elif key == ord("c") or key == ord("C"):
+            waypoint_queue.clear()
+            target_point = None
+            flight_phase = "IDLE"
+            print("[EVENT] Mission flight plan cleared.")
 
     cv2.destroyAllWindows()
     print("[INFO] Mission Dispatcher closed.")
