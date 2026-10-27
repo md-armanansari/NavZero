@@ -12,16 +12,19 @@ class DroneSimulator:
         self.fov_size = fov_size # Width/height of drone camera field of view in map pixels
         self.map_h, self.map_w = satellite_map.shape[:2]
         
-        # Define a tactical reconnaissance flight path (waypoints across the map)
+        # Scale tactical waypoints smoothly to actual map dimensions with margin
+        margin = max(fov_size // 2 + 20, 60)
+        rel_pts = [
+            (0.18, 0.22),
+            (0.45, 0.60),
+            (0.75, 0.70),
+            (0.82, 0.35),
+            (0.55, 0.18),
+            (0.18, 0.22)
+        ]
         self.waypoints = [
-            (250, 300),
-            (500, 700),
-            (950, 850),
-            (1300, 1200),
-            (1600, 1600),
-            (1200, 1750),
-            (600, 1400),
-            (250, 300)
+            (margin + rx * (self.map_w - 2 * margin), margin + ry * (self.map_h - 2 * margin))
+            for rx, ry in rel_pts
         ]
         
         self.step_idx = 0
