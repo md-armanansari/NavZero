@@ -17,6 +17,15 @@ from navzero.core.telemetry_bridge import (
     MAVLinkHeartbeat
 )
 
+from navzero.core.scenarios import (
+    CombatScenario,
+    ThreatCategory,
+    DEFENSE_SCENARIOS,
+    get_combat_scenarios,
+    get_scenario_by_id,
+    apply_scenario_to_engine
+)
+
 __all__ = [
     "NavZeroFlightEngine",
     "SensorMode",
@@ -27,6 +36,12 @@ __all__ = [
     "NavZeroTacticalPacket",
     "VisionPositionEstimate",
     "GlobalPositionInt",
-    "MAVLinkHeartbeat"
+    "MAVLinkHeartbeat",
+    "CombatScenario",
+    "ThreatCategory",
+    "DEFENSE_SCENARIOS",
+    "get_combat_scenarios",
+    "get_scenario_by_id",
+    "apply_scenario_to_engine"
 ]
 
