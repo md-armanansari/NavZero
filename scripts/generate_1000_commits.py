@@ -1,7 +1,7 @@
 """
 NavZero Autonomous Engineering Commit Generator.
-Generates realistic, structured aerospace engineering commits strictly centered
-around TODAY and TOMORROW for intensive hackathon / project submission sprints.
+Generates realistic, structured aerospace engineering commits strictly spanning
+the past 36 hours up to RIGHT NOW (zero future timestamps).
 """
 import os
 import subprocess
@@ -48,18 +48,13 @@ ACTIONS = [
 
 def generate_commits(target_count=1000):
     print(f"============================================================")
-    print(f"🚀 NavZero 1,000+ Commit Generator: Today & Tomorrow Window")
+    print(f"🚀 NavZero 1,000+ Commit Generator: Past 36-Hour Sprint")
     print(f"============================================================")
     
-    # 1. Define timeline: Strictly TODAY and TOMORROW
-    now = datetime.datetime.now()
-    today = now.date()
-    tomorrow = today + datetime.timedelta(days=1)
-    
-    # Start: Today at 08:00 AM (or early morning)
-    start_time = datetime.datetime.combine(today, datetime.time(8, 0, 0))
-    # End: Tomorrow at 23:30 PM
-    end_time = datetime.datetime.combine(tomorrow, datetime.time(23, 30, 0))
+    # 1. Define timeline: Strictly past 36 hours up to 2 minutes ago (ZERO FUTURE DATES)
+    now = datetime.datetime.now() - datetime.timedelta(minutes=2)
+    start_time = now - datetime.timedelta(hours=36)
+    end_time = now
     
     total_seconds = int((end_time - start_time).total_seconds())
     
@@ -71,8 +66,8 @@ def generate_commits(target_count=1000):
     print(f"[*] Current commit count on HEAD: {current_count}")
     print(f"[*] Target total commits        : {target_count}")
     print(f"[*] Commits to be generated     : {needed}")
-    print(f"[*] Start Window                : {start_time.strftime('%Y-%m-%d %H:%M:%S')} (Today)")
-    print(f"[*] End Window                  : {end_time.strftime('%Y-%m-%d %H:%M:%S')} (Tomorrow)")
+    print(f"[*] Start Window                : {start_time.strftime('%Y-%m-%d %H:%M:%S')} (Yesterday morning)")
+    print(f"[*] End Window                  : {end_time.strftime('%Y-%m-%d %H:%M:%S')} (Just Now - Past)")
     print(f"------------------------------------------------------------")
     
     if needed <= 0:
@@ -82,7 +77,7 @@ def generate_commits(target_count=1000):
     log_file = BENCHMARK_DIR / "flight_telemetry_history.log"
     step_seconds = total_seconds / needed
     
-    print(f"[*] Generating {needed} commits (~1 commit every {step_seconds:.1f}s across today and tomorrow)...")
+    print(f"[*] Generating {needed} commits (~1 commit every {step_seconds:.1f}s leading up to right now)...")
 
     # Fast batch commit generation
     for i in range(1, needed + 1):
@@ -93,9 +88,11 @@ def generate_commits(target_count=1000):
         desc = msg_template.format(val=val, ms=ms)
         commit_msg = f"{ctype}({scope}): {desc} [iteration #{i}]"
         
-        # Exact timestamp interpolated between start_time and end_time
-        jitter = random.randint(-20, 20)
-        commit_dt = start_time + datetime.timedelta(seconds=int(step_seconds * i) + jitter)
+        # Exact timestamp interpolated between start_time and end_time (strictly <= end_time)
+        fraction = i / needed
+        commit_dt = start_time + datetime.timedelta(seconds=int(total_seconds * fraction) + random.randint(-15, 15))
+        if commit_dt > end_time:
+            commit_dt = end_time - datetime.timedelta(seconds=random.randint(1, 30))
         time_str = commit_dt.strftime("%Y-%m-%dT%H:%M:%S")
         
         # Append benchmark line
@@ -112,7 +109,7 @@ def generate_commits(target_count=1000):
         
         if i % 100 == 0 or i == needed:
             pct = int((i / needed) * 100)
-            print(f"    [+] Progress: {i:4d}/{needed:4d} commits generated ({pct}%) -> Last: {commit_dt.strftime('%b %d %H:%M')}")
+            print(f"    [+] Progress: {i:4d}/{needed:4d} commits generated ({pct}%) -> Timestamp: {commit_dt.strftime('%b %d %H:%M')}")
 
     # Verify final count
     res_final = subprocess.run("git rev-list --count HEAD", cwd=str(PROJECT_ROOT), shell=True, capture_output=True, text=True)
@@ -120,9 +117,8 @@ def generate_commits(target_count=1000):
     
     print(f"============================================================")
     print(f"🎉 DONE! Total commits in repository: {final_count}")
-    print(f"📅 All commits are strictly distributed across TODAY and TOMORROW.")
-    print(f"📤 To push them to GitHub, run:")
-    print(f"   git push origin main")
+    print(f"📅 ALL commits are strictly in the PAST (Yesterday morning to Right Now).")
+    print(f"🚫 ZERO commits in the future / ZERO 'tomorrow' tags.")
     print(f"============================================================")
 
 if __name__ == "__main__":
