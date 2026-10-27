@@ -28,23 +28,31 @@ class DroneSimulator:
         ]
         
         self.step_idx = 0
-        self.total_steps = 200
+        self.total_steps = 400
         self.trajectory_points = self._generate_dense_trajectory()
         
     def _generate_dense_trajectory(self):
-        """Generates smooth interpolated points connecting waypoints"""
+        """Generates smooth, aerodynamic Catmull-Rom spline trajectory across waypoints"""
         points = []
         num_segs = len(self.waypoints) - 1
         steps_per_seg = self.total_steps // num_segs
         
         for i in range(num_segs):
-            p1 = np.array(self.waypoints[i])
-            p2 = np.array(self.waypoints[i+1])
+            p0 = np.array(self.waypoints[max(0, i - 1)], dtype=np.float32)
+            p1 = np.array(self.waypoints[i], dtype=np.float32)
+            p2 = np.array(self.waypoints[min(len(self.waypoints) - 1, i + 1)], dtype=np.float32)
+            p3 = np.array(self.waypoints[min(len(self.waypoints) - 1, i + 2)], dtype=np.float32)
+            
             for t in np.linspace(0, 1, steps_per_seg, endpoint=False):
-                pt = (1 - t) * p1 + t * p2
-                # Add slight crosswind drift
-                pt[0] += np.sin(t * 10) * 8
-                pt[1] += np.cos(t * 10) * 8
+                # Catmull-Rom spline interpolation (C1 continuous curve)
+                t2 = t * t
+                t3 = t2 * t
+                pt = 0.5 * (
+                    (2 * p1) +
+                    (-p0 + p2) * t +
+                    (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+                    (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+                )
                 points.append(pt)
         return points
 
