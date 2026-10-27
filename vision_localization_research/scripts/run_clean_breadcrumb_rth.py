@@ -4,13 +4,15 @@ Scenario B (Clean Teach-and-Repeat): Zero-Map Autonomous Return-to-Home.
 1. OUTBOUND PHASE (Teach Mode):
    - Only captures the visual trail quietly into onboard memory.
    - Shows clean single-camera view without confusing comparison lines.
-   - Drops a visual breadcrumb (frozen keyframe + 256-bit hashes) every 2.5 seconds.
+   - Drops a visual breadcrumb (frozen keyframe + 256-bit hashes) every 1.5 seconds.
+   - Shows thumbnail gallery of stored footprints at the bottom.
 
 2. INBOUND PHASE (Repeat / Return-to-Home Mode):
    - Triggered by pressing [R] (or [J] for GPS loss).
    - Screen splits into Dual-View: Live Camera (Left) vs Stored Path Footprints (Right).
-   - Re-matches each stored footprint in reverse order (#N -> #N-1 ... -> #0).
-   - Steps backward along the path until touchdown at Home Base.
+   - Re-matches each stored footprint one-by-one in reverse order (#N -> #N-1 ... -> #0).
+   - Holds each verified lock for 1.5 seconds so judges clearly see the step-by-step retreat.
+   - You can also press [SPACE] to manually step through stored images one-by-one!
 """
 
 import sys
@@ -38,16 +40,16 @@ class VisualBreadcrumb:
 
 
 def run_clean_breadcrumb_demo():
-    print("=" * 72)
+    print("=" * 74)
     print("  SCENARIO B: CLEAN TEACH-AND-REPEAT VISUAL BREADCRUMBS (V-RTH)")
-    print("  Phase 1: Record trail quietly -> Phase 2: Compare in reverse on return")
-    print("=" * 72)
+    print("  Phase 1: Record trail quietly -> Phase 2: Compare ONE-BY-ONE in reverse")
+    print("=" * 74)
     print("\nHOW IT WORKS:")
     print(" 1. Point webcam at starting spot (Home Base). It locks Crumb #0.")
-    print(" 2. Move your camera across your desk/room. It records breadcrumbs quietly.")
-    print(" 3. Press [R] (or [J] to jam GPS): Watch the screen split into comparison mode")
-    print("    and retrace each stored footprint back to Home Base!")
-    print(" 4. Press [Q] or [ESC] to exit.\n")
+    print(" 2. Slowly pan camera across your desk/room. It logs footprints every 1.5s.")
+    print(" 3. Press [R] (or [J]): Watch the system match each stored image ONE-BY-ONE!")
+    print(" 4. Press [SPACE] to manually step to the next stored breadcrumb.")
+    print(" 5. Press [Q] or [ESC] to exit.\n")
 
     matcher = VisualFeatureMatcher(max_features=600, ratio_threshold=0.75, ransac_reproj_threshold=5.0)
 
@@ -82,10 +84,11 @@ def run_clean_breadcrumb_demo():
 
     last_breadcrumb_time = time.perf_counter()
     flash_crumb_id = 0
-    flash_timer = 1.0  # Show Home base banner initially
+    flash_timer = 1.0
     jammed = False
     rth_active = False
     current_target_crumb_idx = 0
+    step_dwell_timer = 0.0  # Holds visual lock for 1.8 seconds so user can see it!
 
     window_name = "Scenario B: Visual Teach-and-Repeat (V-RTH)"
     cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
@@ -109,8 +112,8 @@ def run_clean_breadcrumb_demo():
 
         # ----------------- PHASE 1: OUTBOUND FLIGHT (RECORD TRAIL) -----------------
         if not rth_active:
-            # Drop breadcrumb every 2.5 seconds
-            if (t_now - last_breadcrumb_time) > 2.5 and len(breadcrumbs) < 25:
+            # Drop breadcrumb every 1.5 seconds for quick responsive logging
+            if (t_now - last_breadcrumb_time) > 1.5 and len(breadcrumbs) < 20:
                 if curr_desc is not None and len(curr_kp) >= 10:
                     new_crumb = VisualBreadcrumb(
                         id=len(breadcrumbs),
@@ -122,11 +125,10 @@ def run_clean_breadcrumb_demo():
                     breadcrumbs.append(new_crumb)
                     last_breadcrumb_time = t_now
                     flash_crumb_id = new_crumb.id
-                    flash_timer = 1.2
+                    flash_timer = 1.0
                     print(f"[OUTBOUND] Stored Footprint #{new_crumb.id} in memory bank.")
 
-            # In Outbound mode: Clean Single-Pane Display (No comparison lines!)
-            disp_h = 500
+            disp_h = 440
             scale = disp_h / frame.shape[0]
             disp_w = int(frame.shape[1] * scale)
             live_disp = cv2.resize(frame, (disp_w, disp_h))
@@ -138,13 +140,13 @@ def run_clean_breadcrumb_demo():
 
             # Flash notification banner when a new crumb is dropped
             if flash_timer > 0:
-                cv2.rectangle(live_disp, (10, disp_h - 70), (disp_w - 10, disp_h - 15), (0, 100, 0), -1)
+                cv2.rectangle(live_disp, (10, disp_h - 60), (disp_w - 10, disp_h - 15), (0, 100, 0), -1)
                 cv2.putText(
                     live_disp,
-                    f">>> FOOTPRINT #{flash_crumb_id} LOGGED INTO MEMORY BANK <<<",
-                    (25, disp_h - 32),
+                    f">>> FOOTPRINT #{flash_crumb_id} LOGGED INTO ONBOARD RAM <<<",
+                    (25, disp_h - 26),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.65,
+                    0.62,
                     (0, 255, 255),
                     2,
                 )
@@ -154,12 +156,12 @@ def run_clean_breadcrumb_demo():
             gps_txt = "GPS: JAMMED [0 SATS]" if jammed else "GPS: ACTIVE [14 SATS]"
             gps_col = (0, 0, 255) if jammed else (0, 255, 0)
 
-            cv2.putText(header, "PHASE 1: OUTBOUND FLIGHT (RECORDING VISUAL TRAIL)", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+            cv2.putText(header, "PHASE 1: OUTBOUND FLIGHT (RECORDING TRAIL)", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
             cv2.putText(header, gps_txt, (15, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.52, gps_col, 2)
 
             cv2.putText(
                 header,
-                f"STORED CRUMBS: {len(breadcrumbs)} | STATUS: CAPTURING GROUND TRAIL",
+                f"STORED MEMORY: {len(breadcrumbs)} FOOTPRINTS | READY TO RETURN",
                 (disp_w - 530, 38),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.52,
@@ -167,13 +169,26 @@ def run_clean_breadcrumb_demo():
                 2,
             )
 
+            # Thumbnail Filmstrip of Stored Breadcrumbs
+            strip_h = 70
+            filmstrip = np.zeros((strip_h, disp_w, 3), dtype=np.uint8)
+            thumb_w = 60
+            for i, b in enumerate(breadcrumbs[:12]):
+                tx = 15 + i * (thumb_w + 10)
+                if tx + thumb_w < disp_w - 10:
+                    t_bgr = cv2.cvtColor(b.image_gray, cv2.COLOR_GRAY2BGR)
+                    t_res = cv2.resize(t_bgr, (thumb_w, strip_h - 20))
+                    filmstrip[15 : 15 + t_res.shape[0], tx : tx + thumb_w] = t_res
+                    cv2.rectangle(filmstrip, (tx, 15), (tx + thumb_w, 15 + t_res.shape[0]), (100, 100, 100), 1)
+                    cv2.putText(filmstrip, f"#{b.id}", (tx + 5, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 255), 1)
+
             # Bottom Footer
             footer = np.zeros((32, disp_w, 3), dtype=np.uint8)
-            cv2.putText(footer, "Press [R] to Engage Return-to-Home | Press [J] to Jam GPS | Press [Q] to Exit", (15, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1)
+            cv2.putText(footer, "Move camera to log path | Press [R] to Return-to-Home | [J] Jam GPS | [Q] Exit", (15, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1)
 
-            final_gui = np.vstack([header, live_disp, footer])
+            final_gui = np.vstack([header, live_disp, filmstrip, footer])
 
-        # ----------------- PHASE 2: RETURN-TO-HOME (REVERSE COMPARISON) -----------------
+        # ----------------- PHASE 2: RETURN-TO-HOME (COMPARE ONE-BY-ONE) -----------------
         else:
             if current_target_crumb_idx < 0:
                 current_target_crumb_idx = 0
@@ -183,6 +198,17 @@ def run_clean_breadcrumb_demo():
             inlier_ratio = 0.0
             good_matches = []
             inlier_matches = []
+
+            # Step dwell countdown
+            if step_dwell_timer > 0:
+                step_dwell_timer = max(0.0, step_dwell_timer - dt)
+                if step_dwell_timer == 0.0:
+                    # Time to step to the next older breadcrumb!
+                    if current_target_crumb_idx > 0:
+                        current_target_crumb_idx -= 1
+                        target_crumb = breadcrumbs[current_target_crumb_idx]
+                        print(f"[V-RTH] Advanced to earlier waypoint: Crumb #{current_target_crumb_idx}")
+
             guidance_text = f"SEARCHING CRUMB #{target_crumb.id}..."
             guidance_color = (0, 165, 255)
 
@@ -201,16 +227,18 @@ def run_clean_breadcrumb_demo():
                         inliers_count = len(inlier_matches)
                         inlier_ratio = inliers_count / len(good_matches)
 
-                        if inliers_count >= 12:
+                        # Match lock threshold
+                        if inliers_count >= 10:
                             if current_target_crumb_idx > 0:
-                                guidance_text = f"LOCKED CRUMB #{target_crumb.id}! STEPPING TO #{current_target_crumb_idx - 1}..."
+                                if step_dwell_timer <= 0.0:
+                                    step_dwell_timer = 1.8  # Hold on screen for 1.8s so user sees the match!
+                                guidance_text = f"LOCKED CRUMB #{target_crumb.id}! ADVANCING TO #{current_target_crumb_idx - 1} IN {step_dwell_timer:.1f}s"
                                 guidance_color = (0, 255, 0)
-                                current_target_crumb_idx -= 1
                             else:
                                 guidance_text = "TOUCHDOWN CONFIRMED: RETURNED TO EXACT HOME BASE!"
                                 guidance_color = (0, 255, 0)
 
-            disp_h = 420
+            disp_h = 380
             cam_resized = cv2.resize(frame, (int(frame.shape[1] * (disp_h / frame.shape[0])), disp_h))
             crumb_bgr = cv2.cvtColor(target_crumb.image_gray, cv2.COLOR_GRAY2BGR)
             crumb_resized = cv2.resize(crumb_bgr, (int(crumb_bgr.shape[1] * (disp_h / crumb_bgr.shape[0])), disp_h))
@@ -227,6 +255,10 @@ def run_clean_breadcrumb_demo():
                 flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS,
             )
 
+            # Labels on the two panes
+            cv2.putText(vis, "LIVE DRONE CAMERA", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 2)
+            cv2.putText(vis, f"STORED MEMORY: CRUMB #{target_crumb.id}", (cam_resized.shape[1] + 15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 255), 2)
+
             # Top Header
             header = np.zeros((65, vis.shape[1], 3), dtype=np.uint8)
             cv2.putText(
@@ -240,7 +272,7 @@ def run_clean_breadcrumb_demo():
             )
             cv2.putText(
                 header,
-                f"TARGET: CRUMB #{target_crumb.id} OF {len(breadcrumbs)-1} | INLIERS: {inliers_count} ({inlier_ratio*100:.1f}%)",
+                f"ACTIVE TARGET: #{target_crumb.id} OF {len(breadcrumbs)-1} | INLIERS: {inliers_count} ({inlier_ratio*100:.1f}%)",
                 (15, 50),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.52,
@@ -250,10 +282,28 @@ def run_clean_breadcrumb_demo():
 
             cv2.putText(header, guidance_text, (vis.shape[1] - 560, 38), cv2.FONT_HERSHEY_SIMPLEX, 0.52, guidance_color, 2)
 
-            footer = np.zeros((32, vis.shape[1], 3), dtype=np.uint8)
-            cv2.putText(footer, "AUTONOMOUS V-RTH ACTIVE | Retracing stored path back to Home Base | Press [Q] to Exit", (15, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1)
+            # Thumbnail Filmstrip with Active Crumb Highlighted
+            strip_h = 70
+            filmstrip = np.zeros((strip_h, vis.shape[1], 3), dtype=np.uint8)
+            thumb_w = 60
+            for i, b in enumerate(breadcrumbs[:12]):
+                tx = 15 + i * (thumb_w + 10)
+                if tx + thumb_w < vis.shape[1] - 10:
+                    t_bgr = cv2.cvtColor(b.image_gray, cv2.COLOR_GRAY2BGR)
+                    t_res = cv2.resize(t_bgr, (thumb_w, strip_h - 20))
+                    filmstrip[15 : 15 + t_res.shape[0], tx : tx + thumb_w] = t_res
+                    if b.id == target_crumb.id:
+                        # Highlight active comparison target in bold yellow!
+                        cv2.rectangle(filmstrip, (tx - 2, 13), (tx + thumb_w + 2, 17 + t_res.shape[0]), (0, 255, 255), 2)
+                        cv2.putText(filmstrip, f"#{b.id}*", (tx + 5, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.38, (0, 255, 255), 2)
+                    else:
+                        cv2.rectangle(filmstrip, (tx, 15), (tx + thumb_w, 15 + t_res.shape[0]), (80, 80, 80), 1)
+                        cv2.putText(filmstrip, f"#{b.id}", (tx + 5, 12), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (180, 180, 180), 1)
 
-            final_gui = np.vstack([header, vis, footer])
+            footer = np.zeros((32, vis.shape[1], 3), dtype=np.uint8)
+            cv2.putText(footer, "[SPACE]: Step to Previous Crumb | [R]: Toggle Cruise | [Q]: Exit", (15, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1)
+
+            final_gui = np.vstack([header, vis, filmstrip, footer])
 
         cv2.imshow(window_name, final_gui)
 
@@ -266,14 +316,21 @@ def run_clean_breadcrumb_demo():
             if jammed and not rth_active:
                 rth_active = True
                 current_target_crumb_idx = max(0, len(breadcrumbs) - 1)
+                step_dwell_timer = 0.0
                 print(f"[EVENT] LOST GPS: Auto-engaging Return-to-Home! Target Crumb #{current_target_crumb_idx}")
         elif key == ord("r") or key == ord("R"):
             rth_active = not rth_active
             if rth_active:
                 current_target_crumb_idx = max(0, len(breadcrumbs) - 1)
+                step_dwell_timer = 0.0
                 print(f"[EVENT] RETURN-TO-HOME ENGAGED! Retracing from Crumb #{current_target_crumb_idx} back to Home Base!")
             else:
                 print("[EVENT] Returned to manual outbound cruise.")
+        elif key == 32:  # SPACEBAR: Manually step to previous breadcrumb!
+            if rth_active and current_target_crumb_idx > 0:
+                current_target_crumb_idx -= 1
+                step_dwell_timer = 0.0
+                print(f"[MANUAL STEP] User advanced to Crumb #{current_target_crumb_idx}")
 
     cap.release()
     cv2.destroyAllWindows()
