@@ -48,7 +48,7 @@ ACTIONS = [
 
 def generate_commits(target_count=1000):
     print(f"============================================================")
-    print(f"🚀 NavZero 1,000+ Commit Generator: Past 36-Hour Sprint")
+    print(f"[*] NavZero 1,000+ Commit Generator: Past 36-Hour Sprint")
     print(f"============================================================")
     
     # 1. Define timeline: Strictly past 36 hours up to 2 minutes ago (ZERO FUTURE DATES)
@@ -116,9 +116,9 @@ def generate_commits(target_count=1000):
     final_count = int(res_final.stdout.strip()) if res_final.stdout.strip().isdigit() else target_count
     
     print(f"============================================================")
-    print(f"🎉 DONE! Total commits in repository: {final_count}")
-    print(f"📅 ALL commits are strictly in the PAST (Yesterday morning to Right Now).")
-    print(f"🚫 ZERO commits in the future / ZERO 'tomorrow' tags.")
+    print(f"[+] SUCCESS! Total commits in repository: {final_count}")
+    print(f"[+] ALL commits are strictly in the PAST (Yesterday morning to Right Now).")
+    print(f"[+] ZERO commits in the future / ZERO 'tomorrow' tags.")
     print(f"============================================================")
 
 if __name__ == "__main__":
