@@ -31,6 +31,43 @@ When a standard drone enters a jammed area:
 3. SAFE RETURN HOME: Drone matches ground photos in reverse: [BASE] ◀── [Photo 1] ◀── [Photo 2] ◀── [Photo 3]
 ```
 
+### 🧠 Autonomous Perception & MAVLink Bridge Architecture:
+```text
+┌─────────────────────────┐      ┌───────────────────────────────┐
+│   Downward CMOS Camera  │      │ Pre-Loaded Georeferenced Map  │
+│    (Live 30 FPS Feed)   │      │   (Satellite / Aerial Ortho)  │
+└────────────┬────────────┘      └──────────────┬────────────────┘
+             │                                  │
+             ▼                                  ▼
+      [ ORB Feature ]                    [ ORB Feature ]
+      [  Extraction ]                    [  Extraction ]
+             │                                  │
+             └─────────────────┬────────────────┘
+                               │
+                               ▼
+                [ Bitwise Hamming Matching & ]
+                [   Lowe's 0.75 Ratio Test   ]
+                               │
+                               ▼
+                [ Projective RANSAC Filter  ]
+                [ (Rejects sensor noise/fog)]
+                               │
+                               ▼
+                [ 6-Parameter GDAL Affine   ]
+                [ Coordinate Transformation ]
+                               │
+                               ▼
+                [ Lat/Lon Coordinate Stream ]
+                [     (30 Hz Update Rate)   ]
+                               │
+                               ▼
+              ┌────────────────────────────────────┐
+              │ MAVLink VISION_POSITION_ESTIMATE   │
+              │   (UART Serial to Drone Pixhawk)   │
+              └────────────────────────────────────┘
+```
+
+
 ---
 
 ## 📁 Repository Structure
