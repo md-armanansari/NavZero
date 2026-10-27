@@ -76,6 +76,7 @@ NavZero/
 ├── run_windows.bat                  # Master interactive Windows launcher
 ├── launch_gcs_station.bat           # 1-Click launcher for Tactical GCS Web Station
 ├── launch_ladakh_dispatcher.bat     # 1-Click launcher for Multi-Waypoint Dispatcher
+├── run_defense_benchmark.bat        # 1-Click launcher for Defense Combat Evaluation Benchmark
 ├── run_mac.command                  # Master interactive macOS launcher
 ├── requirements.txt                 # Unified project dependencies
 ├── navzero/                         # Tactical Ground Control Station (GCS)
@@ -86,6 +87,8 @@ NavZero/
 │       ├── __init__.py              # Core package exports
 │       ├── flight_engine.py         # Unified NavZeroFlightEngine & Autonomous Failsafe
 │       ├── telemetry_bridge.py      # STANAG-4586 MAVLink UDP socket bridge (Port 14550)
+│       ├── scenarios.py             # Defense combat mission presets & threat models
+│       ├── defense_benchmark.py     # Automated combat benchmark runner (CEP50, CEP95)
 │       ├── geo_utils.py             # Affine coordinate projection & WGS-84 conversion
 │       ├── map_generator.py         # Synthetic terrain generator
 │       ├── terrain_matcher.py       # SIFT/ORB feature matching engine
@@ -96,8 +99,8 @@ NavZero/
     ├── experiments/                 # Benchmark CSVs, plots & reports
     ├── scripts/                     # Interactive flight simulators & tools
     │   ├── run_drone_sim.py         # 30 FPS Aviation HUD cockpit simulator
-    │   ├── run_interactive_map_tracker.py  # Click-to-fly terrain dispatcher
     │   ├── run_tactical_mission_dispatcher.py # Multi-waypoint mission planner & RTH
+    │   ├── run_defense_benchmark.py # Automated defense combat benchmark CLI runner
     │   ├── run_breadcrumb_rth.py    # Zero-map reverse visual navigation
     │   ├── run_clean_breadcrumb_rth.py # Clean teach-and-repeat reverse homing
     │   ├── run_real_aerial_tracker.py # 100% photographic orthophoto tracker
@@ -110,7 +113,7 @@ NavZero/
     │   ├── evaluation.py            # Latency, RMSE, and repeatability testing
     │   ├── image_inspector.py       # Format inspection & memory-safe plotting
     │   └── dashboard_app.py         # Streamlit research evaluation dashboard
-    └── tests/                       # 50 automated unit & integration tests
+    └── tests/                       # 58 automated unit & integration tests
 ```
 
 ---
@@ -128,12 +131,13 @@ Double-click `launch_gcs_station.bat` or run:
 streamlit run navzero/app.py
 ```
 * **Unified Flight Core:** Driven by `NavZeroFlightEngine` with 400-point continuous Catmull-Rom spline flight and STANAG-4586 telemetry.
+* **Combat Mission Presets:** 1-Click presets for `ALPHA: Forward Ingress (GNSS Jammed)`, `BRAVO: River Valley Night (Thermal FLIR)`, and `CHARLIE: Deep Jamming & Whiteout (Breadcrumb RTH)`.
 * **Multi-Spectral Payloads:** Select between `☀️ EO Daylight`, `🌙 IR FLIR White-Hot` (thermal night vision), and `🔥 IR Ironbow`.
 * **MAVLink Network Stream:** Live UDP broadcast on port `14550` (`VISION_POSITION_ESTIMATE`, `GLOBAL_POSITION_INT`).
 * **Interactive EW Controls:** Toggle `🚨 INJECT ENEMY JAMMING` to simulate EW attacks with real-time audio alerts.
 * **Environmental Stress:** Inject dynamic crosswinds (up to 20 m/s) and cloud obscuration / whiteout (up to 100%).
 * **Scenario B Memory Buffer:** Visual breadcrumbs are stored in high-speed RAM; view live keyframe footprints in the collapsible gallery.
-* **Mission Export:** Click `📥 EXPORT MISSION FLIGHT LOG` to download geodetic CSV telemetry for battlefield debriefing.
+* **1-Click Evaluation Benchmark:** Execute automated batch Monte-Carlo combat trials directly from the dashboard and export CSV reports.
 
 ### 3. Launch Tactical Ladakh Multi-Waypoint Dispatcher
 Double-click `launch_ladakh_dispatcher.bat` or run:
@@ -157,10 +161,22 @@ The flight computer broadcasts real-time telemetry over UDP on localhost port `1
 - **`NAVZERO_TACTICAL_STATUS (#188)`**: Emits inlier count, confidence %, sensor payload mode, and visual memory buffer depth.
 Compatible out-of-the-box with **QGroundControl**, **MissionPlanner**, and **ArduPilot/PX4 SITL**.
 
+### 5. Automated Defense Combat Evaluation Benchmark
+Run a 3-scenario combat evaluation trial measuring empirical Circular Error Probable (CEP50 / CEP95):
+```bash
+run_defense_benchmark.bat
+# or CLI:
+python vision_localization_research/scripts/run_defense_benchmark.py --steps 30
+```
+Evaluates three operational profiles:
+1. **Operation Desert Falcon (Alpha Ingress):** High-speed daylight flight, L1/L2 GNSS severed, optical relocalization bounds drift to $< 2.0$m CEP.
+2. **Operation Shadow Talon (Bravo Night River Valley):** FLIR Long-Wave IR White-Hot thermal gradient matching under complete optical darkness.
+3. **Operation Ghost Aegis (Charlie Double-Denial):** Severe EW jamming + 85% cloud whiteout triggers autonomous Scenario B Visual Breadcrumb Backtracking RTH.
+
 ---
 
 ## 🧪 Testing & Verification
-Run the 50 automated unit and integration tests:
+Run the 58 automated unit and integration tests:
 ```bash
 pytest vision_localization_research/tests -v
 ```
