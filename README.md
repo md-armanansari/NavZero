@@ -37,6 +37,8 @@ When a standard drone enters a jammed area:
 ```
 NavZero/
 ├── run_windows.bat                  # Master interactive Windows launcher
+├── launch_gcs_station.bat           # 1-Click launcher for Tactical GCS Web Station
+├── launch_ladakh_dispatcher.bat     # 1-Click launcher for Multi-Waypoint Dispatcher
 ├── run_mac.command                  # Master interactive macOS launcher
 ├── requirements.txt                 # Unified project dependencies
 ├── navzero/                         # Tactical Ground Control Station (GCS)
@@ -47,15 +49,15 @@ NavZero/
 │       ├── geo_utils.py             # Affine coordinate projection
 │       ├── map_generator.py         # Synthetic terrain generator
 │       ├── terrain_matcher.py       # SIFT/ORB feature matching engine
-│       └── flight_simulator.py      # Flight kinematics & EW jamming sim
+│       └── flight_simulator.py      # Catmull-Rom spline trajectory & EW jamming sim
 └── vision_localization_research/    # Research suite & real-time simulators
     ├── docs/                        # Full technical specifications
     ├── data/                        # Satellite & aerial terrain maps
     ├── experiments/                 # Benchmark CSVs, plots & reports
     ├── scripts/                     # Interactive flight simulators & tools
-    │   ├── run_drone_sim.py         # Real drone cockpit telemetry simulator
+    │   ├── run_drone_sim.py         # 30 FPS Aviation HUD cockpit simulator
     │   ├── run_interactive_map_tracker.py  # Click-to-fly terrain dispatcher
-    │   ├── run_tactical_mission_dispatcher.py # Waypoint & home base mission planner
+    │   ├── run_tactical_mission_dispatcher.py # Multi-waypoint mission planner & RTH
     │   ├── run_breadcrumb_rth.py    # Zero-map reverse visual navigation
     │   ├── run_real_aerial_tracker.py # 100% photographic orthophoto tracker
     │   ├── run_live_webcam.py       # Laptop webcam physical feature tracker
@@ -79,23 +81,28 @@ NavZero/
 pip install -r requirements.txt
 ```
 
-### 2. Launch Tactical Ground Control Station
+### 2. Launch Tactical Ground Control Station (GCS)
+Double-click `launch_gcs_station.bat` or run:
 ```bash
 streamlit run navzero/app.py
 ```
-Open `http://localhost:8501` to view the live optical feed, tactical map, and test GPS jamming fallback.
+* **Interactive Controls:** Toggle `🚨 INJECT ENEMY JAMMING` to simulate EW attacks with real-time audio alerts.
+* **Continuous Flight:** Click `▶️ START CONTINUOUS FLIGHT` to stream live 25 FPS nadir camera telemetry.
+* **Mission Export:** Click `📥 EXPORT MISSION FLIGHT LOG` to download geodetic CSV telemetry for battlefield debriefing.
 
-### 3. Launch Tactical Ladakh Mission Dispatcher
+### 3. Launch Tactical Ladakh Multi-Waypoint Dispatcher
+Double-click `launch_ladakh_dispatcher.bat` or run:
 ```bash
 python vision_localization_research/scripts/run_tactical_mission_dispatcher.py
 ```
 * **Right-Click**: Set Home Base runway location on the satellite map
-* **Left-Click**: Dispatch drone autonomously to any target waypoint across Ladakh terrain
+* **Left-Click**: Add mission waypoints (`WP-1`, `WP-2`, `WP-3`...) — drone navigates sequentially
+* **`[C]`**: Clear current flight plan
 * **`[J]`**: Toggle Electronic Warfare GPS Jamming ON / OFF (demonstrates optical lock fallback)
 * **`[R]`**: Trigger Autonomous Return-to-Home (drone retraces course back to runway)
 * **`[Q]`**: Exit
 
-*(Note: The linear telemetry HUD simulator is also available via `python vision_localization_research/scripts/run_drone_sim.py`)*
+*(Note: The 30 FPS aviation HUD cockpit is also available via `python vision_localization_research/scripts/run_drone_sim.py`)*
 
 ---
 
