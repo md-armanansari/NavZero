@@ -36,3 +36,4 @@ venv.bak/
 .pytest_cache/
 .coverage
 htmlcov/
+.venv_windows_backup/

@@ -1,16 +1,24 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$DIR"
+if [ -f "$DIR/.venv/bin/python" ]; then
+    PYTHON="$DIR/.venv/bin/python"
+    STREAMLIT="$DIR/.venv/bin/streamlit"
+elif [ -f "$DIR/../vision_localization_research/.venv/bin/python" ]; then
+    PYTHON="$DIR/../vision_localization_research/.venv/bin/python"
+    STREAMLIT="$DIR/../vision_localization_research/.venv/bin/streamlit"
+elif command -v python3.12 >/dev/null 2>&1; then
+    PYTHON="python3.12"
+    STREAMLIT="streamlit"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+    STREAMLIT="streamlit"
+else
+    PYTHON="python"
+    STREAMLIT="streamlit"
+fi
 
 echo "======================================================================"
 echo "   VISION LOCALIZATION RESEARCH - Offline Evaluation Dashboard"
 echo "======================================================================"
-echo "Launching Streamlit evaluation interface..."
-
-if [ -f "$DIR/.venv/bin/streamlit" ]; then
-    "$DIR/.venv/bin/streamlit" run src/vision_loc/dashboard_app.py --server.port 8502
-elif command -v streamlit &>/dev/null; then
-    streamlit run src/vision_loc/dashboard_app.py --server.port 8502
-else
-    python3 -m streamlit run src/vision_loc/dashboard_app.py --server.port 8502
-fi
+"$STREAMLIT" run src/vision_loc/dashboard_app.py --server.port 8502

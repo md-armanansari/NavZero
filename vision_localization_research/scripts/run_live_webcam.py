@@ -60,7 +60,11 @@ def run_live_webcam_demo():
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
-        print("[ERROR] Could not open webcam (index 0).")
+        cap = cv2.VideoCapture(1)
+    if not cap.isOpened():
+        print("[ERROR] Could not open webcam (tried index 0 and 1).")
+        print("[HINT] On macOS, make sure Camera permission is granted:")
+        print("       System Settings -> Privacy & Security -> Camera -> Terminal / IDE")
         return
 
     # Check for default reference image or create sample

@@ -124,14 +124,20 @@ def run_flight_companion(cam_index=0, serial_port="/dev/ttyAMA0", baud=921600):
     # 4. Open downward camera
     print(f"[CAMERA] Initializing downward optical camera (Index: {cam_index})...")
     cap = cv2.VideoCapture(cam_index)
+    if not cap.isOpened() and cam_index == 0:
+        cap = cv2.VideoCapture(1)
     if not cap.isOpened():
         print(f"[CRITICAL ERROR] Could not open camera {cam_index}.")
+        print("[HINT] On macOS, make sure Camera permission is granted:")
+        print("       System Settings -> Privacy & Security -> Camera -> Terminal / IDE")
         return
 
     # Warmup
     ret, frame = cap.read()
     if not ret or frame is None:
         print("[CRITICAL ERROR] Camera frame capture failed.")
+        print("[HINT] On macOS, make sure Camera permission is granted:")
+        print("       System Settings -> Privacy & Security -> Camera -> Terminal / IDE")
         cap.release()
         return
 

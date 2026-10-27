@@ -1,20 +1,24 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$DIR"
-
-echo "======================================================================"
-echo "   AUTONOMOUS REAL-DRONE FLIGHT & GPS-JAMMING SIMULATOR"
-echo "======================================================================"
-echo "Launching flight computer and visual telemetry loop..."
-echo ""
-echo "CONTROLS:"
-echo "   [J] = Toggle GPS Jamming ON / OFF"
-echo "   [R] = Trigger Autonomous Visual Return-to-Home (V-RTH)"
-echo "   [Q] = Exit simulator"
-echo ""
-
 if [ -f "$DIR/.venv/bin/python" ]; then
-    "$DIR/.venv/bin/python" scripts/run_drone_sim.py
+    PYTHON="$DIR/.venv/bin/python"
+    STREAMLIT="$DIR/.venv/bin/streamlit"
+elif [ -f "$DIR/../vision_localization_research/.venv/bin/python" ]; then
+    PYTHON="$DIR/../vision_localization_research/.venv/bin/python"
+    STREAMLIT="$DIR/../vision_localization_research/.venv/bin/streamlit"
+elif command -v python3.12 >/dev/null 2>&1; then
+    PYTHON="python3.12"
+    STREAMLIT="streamlit"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+    STREAMLIT="streamlit"
 else
-    python3 scripts/run_drone_sim.py
+    PYTHON="python"
+    STREAMLIT="streamlit"
 fi
+
+echo "======================================================================"
+echo "   Real Drone Autopilot & GPS-Jamming Simulator"
+echo "======================================================================"
+"$PYTHON" scripts/run_drone_sim.py

@@ -1,22 +1,24 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$DIR"
-
-echo "======================================================================"
-echo "  LIVE PHYSICAL WEBCAM DEMO - GPS-DENIED VISUAL LOCALIZATION"
-echo "======================================================================"
-echo ""
-echo "Starting OpenCV real-time visual tracker..."
-echo ""
-echo "HOW TO TEST:"
-echo "1. Point webcam at any book, printed photo, or phone screen."
-echo "2. Press 'S' on your keyboard to SNAP that as your Target Reference."
-echo "3. Move the book/phone around - watch green RANSAC inliers track live!"
-echo "4. Press 'Q' or ESC in the camera window to exit."
-echo ""
-
 if [ -f "$DIR/.venv/bin/python" ]; then
-    "$DIR/.venv/bin/python" scripts/run_live_webcam.py
+    PYTHON="$DIR/.venv/bin/python"
+    STREAMLIT="$DIR/.venv/bin/streamlit"
+elif [ -f "$DIR/../vision_localization_research/.venv/bin/python" ]; then
+    PYTHON="$DIR/../vision_localization_research/.venv/bin/python"
+    STREAMLIT="$DIR/../vision_localization_research/.venv/bin/streamlit"
+elif command -v python3.12 >/dev/null 2>&1; then
+    PYTHON="python3.12"
+    STREAMLIT="streamlit"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+    STREAMLIT="streamlit"
 else
-    python3 scripts/run_live_webcam.py
+    PYTHON="python"
+    STREAMLIT="streamlit"
 fi
+
+echo "======================================================================"
+echo "   Live Physical Webcam Visual Feature Matching"
+echo "======================================================================"
+"$PYTHON" scripts/run_live_webcam.py
