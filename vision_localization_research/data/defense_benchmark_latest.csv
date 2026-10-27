@@ -1,0 +1,2 @@
+Scenario_ID,Scenario_Name,Threat_Level,Frames_Evaluated,Mean_Error_M,CEP50_M,CEP95_M,Max_Error_M,Avg_Inliers,Avg_Latency_MS,Failsafe_Handover_MS,RTH_Touchdown_Error_M,Success_Rate_Pct,Verdict
+ALPHA_FORWARD_INGRESS,Operation Desert Falcon (Forward Ingress),DEFCON 2 // ACTIVE ELECTRONIC WARFARE,3,2.25,2.63,3.22,3.28,140.3,44.63,75.4,0.40,92.5,MISSION SUCCESS // FAILSAFE BOUNDED
