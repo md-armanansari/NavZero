@@ -15,6 +15,8 @@ echo   [R] = Trigger Autonomous Visual Return-to-Home (V-RTH)
 echo   [Q] = Exit
 echo.
 
-.venv\Scripts\python.exe scripts\run_real_aerial_tracker.py
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
+%PYTHON% scripts\run_real_aerial_tracker.py
 
 pause

@@ -49,7 +49,7 @@ result = matcher.match_frame(cam_frame)
 if jam_gps:
     st.error("⚠️ GPS Status: JAMMED / NO SIGNAL — Falling back to Camera Vision Navigation")
 else:
-    st.success("✅ GPS Status: CONNECTED — Normal satellite navigation active")
+    st.success("✅ GPS Status: CONNECTED [14 SATS 3D FIX] — Normal satellite navigation active")
 
 # Two-column layout: Camera view and Map view
 col1, col2 = st.columns(2)

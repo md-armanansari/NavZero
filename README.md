@@ -36,10 +36,9 @@ When a standard drone enters a jammed area:
 ## 📁 Repository Structure
 ```
 NavZero/
+├── run_windows.bat                  # Master interactive Windows launcher
+├── run_mac.command                  # Master interactive macOS launcher
 ├── requirements.txt                 # Unified project dependencies
-├── generate_project_pdf.py          # Complete defense project explanation PDF generator
-├── generate_proposal_pdf.py         # Incubation proposal PDF generator
-├── generate_raunak_proposal.py      # Personalized proposal PDF generator
 ├── navzero/                         # Tactical Ground Control Station (GCS)
 │   ├── app.py                       # Streamlit Tactical GCS web dashboard
 │   ├── run_navzero.bat              # Windows launcher

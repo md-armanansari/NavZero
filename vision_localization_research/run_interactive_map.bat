@@ -17,6 +17,8 @@ echo   - Press [R] = Trigger Autonomous Return-to-Home (V-RTH)
 echo   - Press [Q] = Exit
 echo.
 
-.venv\Scripts\python.exe scripts\run_interactive_map_tracker.py
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
+%PYTHON% scripts\run_interactive_map_tracker.py
 
 pause

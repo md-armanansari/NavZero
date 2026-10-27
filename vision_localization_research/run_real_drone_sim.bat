@@ -14,6 +14,8 @@ echo   [R] = Trigger Autonomous Visual Return-to-Home (V-RTH)
 echo   [Q] = Exit simulator
 echo.
 
-.venv\Scripts\python.exe scripts\run_drone_sim.py
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
+%PYTHON% scripts\run_drone_sim.py
 
 pause

@@ -15,6 +15,8 @@ echo   4. Press [J] = Toggle GPS Jamming ON / OFF
 echo   5. Press [Q] = Exit
 echo.
 
-.venv\Scripts\python.exe scripts\run_tactical_mission_dispatcher.py
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
+%PYTHON% scripts\run_tactical_mission_dispatcher.py
 
 pause

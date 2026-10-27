@@ -2,6 +2,8 @@
 title Switch Terrain Map (Ladakh vs Ocean Stress Test)
 cd /d "%~dp0"
 
-.venv\Scripts\python.exe scripts\switch_terrain_map.py
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
+%PYTHON% scripts\switch_terrain_map.py
 
 pause

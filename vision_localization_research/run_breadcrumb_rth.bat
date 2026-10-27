@@ -15,6 +15,8 @@ echo   [R] = Trigger Emergency Visual Return-to-Home (V-RTH)
 echo   [Q] = Exit
 echo.
 
-.venv\Scripts\python.exe scripts\run_breadcrumb_rth.py
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
+%PYTHON% scripts\run_breadcrumb_rth.py
 
 pause

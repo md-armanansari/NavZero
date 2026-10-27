@@ -35,15 +35,14 @@ while true; do
     echo "    [7] Real Aerial Flight 100% Photographic Terrain Tracker"
     echo "    [8] Live Physical Webcam Visual Matching Engine"
     echo ""
-    echo "  TOOLS, BENCHMARKS & REPORTS:"
+    echo "  TOOLS, BENCHMARKS & TESTS:"
     echo "    [9] Switch Active Terrain Map (Ladakh / CU Campus / Farmland / Ocean)"
     echo "   [10] Run Benchmark Suite (7 trials + CSV + diagnostic plots)"
-    echo "   [11] Re-generate Defence Project & CU-TBI Incubation Proposal PDFs"
-    echo "   [12] Run All 34 Automated Unit & Integration Tests (pytest)"
+    echo "   [11] Run All 34 Automated Unit & Integration Tests (pytest)"
     echo ""
     echo "    [Q] Quit"
     echo "=========================================================================="
-    read -p "Select option [1-12 or Q]: " choice
+    read -p "Select option [1-11 or Q]: " choice
 
     case "$choice" in
         1)
@@ -89,12 +88,6 @@ while true; do
             (cd "$DIR/vision_localization_research" && "$PYTHON" scripts/run_benchmarks.py)
             ;;
         11)
-            echo ""
-            "$PYTHON" "$DIR/generate_project_pdf.py"
-            "$PYTHON" "$DIR/generate_proposal_pdf.py"
-            "$PYTHON" "$DIR/generate_raunak_proposal.py"
-            ;;
-        12)
             echo ""
             (cd "$DIR/vision_localization_research" && "$PYTEST" -v)
             ;;

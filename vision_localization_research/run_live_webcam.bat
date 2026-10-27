@@ -15,14 +15,10 @@ echo 3. Move the book/phone around - watch green RANSAC inliers track live!
 echo 4. Press 'Q' or ESC in the camera window to exit.
 echo.
 
-if not exist ".venv\Scripts\python.exe" (
-    echo [ERROR] Virtual environment not found in .venv.
-    echo Please make sure .venv exists.
-    pause
-    exit /b 1
-)
+set "PYTHON=python"
+if exist ".venv\Scripts\python.exe" set "PYTHON=.venv\Scripts\python.exe"
 
-.venv\Scripts\python.exe scripts\run_live_webcam.py
+%PYTHON% scripts\run_live_webcam.py
 
 if %ERRORLEVEL% neq 0 (
     echo.
