@@ -85,6 +85,7 @@ NavZero/
 │   └── core/                        # Unified Autopilot & Perception Stack
 │       ├── __init__.py              # Core package exports
 │       ├── flight_engine.py         # Unified NavZeroFlightEngine & Autonomous Failsafe
+│       ├── telemetry_bridge.py      # STANAG-4586 MAVLink UDP socket bridge (Port 14550)
 │       ├── geo_utils.py             # Affine coordinate projection & WGS-84 conversion
 │       ├── map_generator.py         # Synthetic terrain generator
 │       ├── terrain_matcher.py       # SIFT/ORB feature matching engine
@@ -109,7 +110,7 @@ NavZero/
     │   ├── evaluation.py            # Latency, RMSE, and repeatability testing
     │   ├── image_inspector.py       # Format inspection & memory-safe plotting
     │   └── dashboard_app.py         # Streamlit research evaluation dashboard
-    └── tests/                       # 45 automated unit & integration tests
+    └── tests/                       # 49 automated unit & integration tests
 ```
 
 ---
@@ -128,6 +129,7 @@ streamlit run navzero/app.py
 ```
 * **Unified Flight Core:** Driven by `NavZeroFlightEngine` with 400-point continuous Catmull-Rom spline flight and STANAG-4586 telemetry.
 * **Multi-Spectral Payloads:** Select between `☀️ EO Daylight`, `🌙 IR FLIR White-Hot` (thermal night vision), and `🔥 IR Ironbow`.
+* **MAVLink Network Stream:** Live UDP broadcast on port `14550` (`VISION_POSITION_ESTIMATE`, `GLOBAL_POSITION_INT`).
 * **Interactive EW Controls:** Toggle `🚨 INJECT ENEMY JAMMING` to simulate EW attacks with real-time audio alerts.
 * **Environmental Stress:** Inject dynamic crosswinds (up to 20 m/s) and cloud obscuration / whiteout (up to 100%).
 * **Scenario B Memory Buffer:** Visual breadcrumbs are stored in high-speed RAM; view live keyframe footprints in the collapsible gallery.
@@ -148,10 +150,17 @@ python vision_localization_research/scripts/run_tactical_mission_dispatcher.py
 
 *(Note: The 30 FPS aviation HUD cockpit is also available via `python vision_localization_research/scripts/run_drone_sim.py`)*
 
+### 4. MAVLink / STANAG-4586 Telemetry Network Bridge (Port 14550)
+The flight computer broadcasts real-time telemetry over UDP on localhost port `14550`:
+- **`VISION_POSITION_ESTIMATE (#102)`**: Transmits local NED metric position and Euler orientation calculated via PnP homography.
+- **`GLOBAL_POSITION_INT (#33)`**: Emits geodetic WGS-84 coordinates scaled to $1\times 10^{-7}$ degrees.
+- **`NAVZERO_TACTICAL_STATUS (#188)`**: Emits inlier count, confidence %, sensor payload mode, and visual memory buffer depth.
+Compatible out-of-the-box with **QGroundControl**, **MissionPlanner**, and **ArduPilot/PX4 SITL**.
+
 ---
 
 ## 🧪 Testing & Verification
-Run the 45 automated unit and integration tests:
+Run the 49 automated unit and integration tests:
 ```bash
 pytest vision_localization_research/tests -v
 ```
