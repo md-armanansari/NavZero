@@ -1,12 +1,27 @@
+import io
+import csv
 import time
 from pathlib import Path
 import cv2
 import numpy as np
 import streamlit as st
 
-from core.geo_utils import GeoReference
-from core.terrain_matcher import TerrainMatcher
-from core.flight_simulator import DroneSimulator
+try:
+    from navzero.core.flight_engine import (
+        NavZeroFlightEngine,
+        SensorMode,
+        AutopilotState,
+        VisualBreadcrumb
+    )
+    from navzero.core.geo_utils import GeoReference
+except ImportError:
+    from core.flight_engine import (
+        NavZeroFlightEngine,
+        SensorMode,
+        AutopilotState,
+        VisualBreadcrumb
+    )
+    from core.geo_utils import GeoReference
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
@@ -82,7 +97,24 @@ st.markdown("""
         gap: 12px;
     }
     
-    .banner-jammed {
+    .banner-optical {
+        background: #222019;
+        border-left: 4px solid #C7B79E;
+        border-top: 1px solid #383428;
+        border-right: 1px solid #383428;
+        border-bottom: 1px solid #383428;
+        color: #E6E1D3;
+        padding: 10px 14px;
+        border-radius: 3px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .banner-rth {
         background: #241D1D;
         border-left: 4px solid #C86E64;
         border-top: 1px solid #3E2B29;
@@ -114,7 +146,7 @@ st.markdown("""
         letter-spacing: 1px;
     }
     .mil-val {
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         font-family: 'JetBrains Mono', monospace;
         color: #E0DDD5;
@@ -163,12 +195,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- MAP & MATCHER INITIALIZATION -----------------
+# ----------------- MAP & UNIFIED ENGINE INITIALIZATION -----------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "vision_localization_research" / "data"
 
 @st.cache_resource
-def load_gcs_system(map_sector: str):
+def load_gcs_engine(map_sector: str):
     map_files = {
         "Ladakh Zanskar Sector (LAC Border)": DATA_DIR / "ladakh_zanskar_map.jpg",
         "High-Altitude Forward Reconnaissance": DATA_DIR / "hd_satellite_recon_map.jpg",
@@ -183,9 +215,8 @@ def load_gcs_system(map_sector: str):
         bottom_right_lat=34.1000, bottom_right_lon=77.7500,
         map_width=map_w, map_height=map_h
     )
-    sim = DroneSimulator(sat_map, geo_ref, fov_size=280)
-    matcher = TerrainMatcher(sat_map, geo_ref, method="ORB")
-    return sat_map, geo_ref, sim, matcher
+    engine = NavZeroFlightEngine(sat_map, geo_ref, fov_size=280, detector_type="ORB", total_steps=400)
+    return sat_map, geo_ref, engine
 
 # ----------------- SESSION STATE -----------------
 if "jam_gps" not in st.session_state:
@@ -194,6 +225,12 @@ if "flight_step" not in st.session_state:
     st.session_state["flight_step"] = 30
 if "is_flying" not in st.session_state:
     st.session_state["is_flying"] = False
+if "sensor_mode" not in st.session_state:
+    st.session_state["sensor_mode"] = SensorMode.EO_DAYLIGHT
+if "crosswind" not in st.session_state:
+    st.session_state["crosswind"] = 0.0
+if "cloud_cover" not in st.session_state:
+    st.session_state["cloud_cover"] = 0.0
 
 # ----------------- SIDEBAR -----------------
 st.sidebar.markdown("### 🧭 MISSION THEATRE")
@@ -206,13 +243,52 @@ sector_name = st.sidebar.selectbox(
     ]
 )
 
-sat_map, geo_ref, sim, matcher = load_gcs_system(sector_name)
+sat_map, geo_ref, engine = load_gcs_engine(sector_name)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("### ⚡ EW COMBAT SETTINGS")
+st.sidebar.markdown("### 📷 MULTI-SPECTRAL SENSOR")
+sensor_choice = st.sidebar.selectbox(
+    "Nadir Camera Payload:",
+    [
+        "☀️ EO Daylight (Standard Optical RGB)",
+        "🌙 IR FLIR White-Hot (Thermal Night Vision)",
+        "🔥 IR Ironbow (Heat Radiance Colormap)"
+    ]
+)
+if "EO Daylight" in sensor_choice:
+    engine.sensor_mode = SensorMode.EO_DAYLIGHT
+elif "White-Hot" in sensor_choice:
+    engine.sensor_mode = SensorMode.IR_WHITE_HOT
+else:
+    engine.sensor_mode = SensorMode.IR_IRONBOW
+st.session_state["sensor_mode"] = engine.sensor_mode
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⚡ EW & ENVIRONMENTAL STRESS")
 sidebar_jam = st.sidebar.toggle("Inject GNSS Jamming (EW Attack)", value=st.session_state["jam_gps"])
 if sidebar_jam != st.session_state["jam_gps"]:
     st.session_state["jam_gps"] = sidebar_jam
+engine.gps_healthy = not st.session_state["jam_gps"]
+
+crosswind_val = st.sidebar.slider(
+    "Crosswind Velocity (m/s):",
+    min_value=0.0,
+    max_value=20.0,
+    value=float(st.session_state["crosswind"]),
+    step=1.0
+)
+st.session_state["crosswind"] = crosswind_val
+engine.crosswind_mps = crosswind_val
+
+cloud_val = st.sidebar.slider(
+    "Cloud Whiteout / Obscuration (%):",
+    min_value=0.0,
+    max_value=100.0,
+    value=float(st.session_state["cloud_cover"]),
+    step=5.0
+)
+st.session_state["cloud_cover"] = cloud_val
+engine.cloud_coverage_pct = cloud_val
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🎛️ FLIGHT PROFILE")
@@ -234,7 +310,7 @@ st.sidebar.markdown("### 📍 MANUAL WAYPOINT SCRUBBER")
 selected_step = st.sidebar.slider(
     "Scrub Waypoint Step:",
     min_value=0,
-    max_value=len(sim.trajectory_points) - 1,
+    max_value=len(engine.trajectory_points) - 1,
     value=st.session_state["flight_step"]
 )
 st.session_state["flight_step"] = selected_step
@@ -244,9 +320,9 @@ st.markdown(f"""
 <div class="gcs-masthead">
     <div>
         <div class="masthead-title">NavZero // Tactical Ground Control Station</div>
-        <div class="masthead-meta">SECTOR: {sector_name.upper()} | PROTOCOL: STANAG-4586 | SENSOR: NADIR EO/IR</div>
+        <div class="masthead-meta">SECTOR: {sector_name.upper()} | PROTOCOL: STANAG-4586 | SENSOR: {engine.sensor_mode.value}</div>
     </div>
-    <div class="masthead-badge">SYS: ONLINE // 400-PT SPLINE</div>
+    <div class="masthead-badge">SYS: ONLINE // 400-PT SPLINE // CRUMBS: {len(engine.breadcrumb_buffer)}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -257,6 +333,7 @@ with ctrl_c1:
     if not st.session_state["jam_gps"]:
         if st.button("🚨 INJECT ENEMY JAMMING", use_container_width=True):
             st.session_state["jam_gps"] = True
+            engine.gps_healthy = False
             # Play tactical audio warning tone via Web Audio API
             st.markdown("""
             <script>
@@ -280,6 +357,7 @@ with ctrl_c1:
     else:
         if st.button("🟢 RESTORE GNSS SIGNAL", use_container_width=True):
             st.session_state["jam_gps"] = False
+            engine.gps_healthy = True
             st.rerun()
 
 with ctrl_c2:
@@ -294,7 +372,7 @@ with ctrl_c2:
 
 with ctrl_c3:
     if st.button("⏭️ STEP FORWARD (+30 STEPS)", use_container_width=True):
-        st.session_state["flight_step"] = (st.session_state["flight_step"] + 30) % len(sim.trajectory_points)
+        st.session_state["flight_step"] = (st.session_state["flight_step"] + 30) % len(engine.trajectory_points)
         st.rerun()
 
 with ctrl_c4:
@@ -302,6 +380,9 @@ with ctrl_c4:
         st.session_state["flight_step"] = 0
         st.session_state["is_flying"] = False
         st.session_state["jam_gps"] = False
+        engine.gps_healthy = True
+        engine.breadcrumb_buffer.clear()
+        engine.lost_lock_count = 0
         st.rerun()
 
 # ----------------- STATUS BANNER -----------------
@@ -310,16 +391,27 @@ flight_step = st.session_state["flight_step"]
 
 status_banner_box = st.empty()
 
-def draw_status_banner(is_jammed):
-    if is_jammed:
+def draw_status_banner(state: AutopilotState, crumbs_count: int):
+    if state == AutopilotState.BREADCRUMB_RTH:
+        return f"""
+        <div class="banner-rth">
+            <span style="font-size: 16px;">🔄</span>
+            <div>
+                <b>SCENARIO B ACTIVATED: ZERO-MAP VISUAL BREADCRUMB RETURN-TO-HOME (RTH)</b><br/>
+                <span style="font-size: 12px; color: #ECD4D1;">
+                Features obscured or map unavailable. Reversing trajectory via {crumbs_count} visual footprints stored in onboard memory buffer.
+                </span>
+            </div>
+        </div>
+        """
+    elif state in (AutopilotState.OPTICAL_TRN, AutopilotState.ORBIT_SEARCH):
         return """
-        <div class="banner-jammed">
+        <div class="banner-optical">
             <span style="font-size: 16px;">⚠️</span>
             <div>
-                <b>ADVISORY: GNSS RADIO FREQUENCY SEVERED (0 SATELLITES)</b><br/>
-                <span style="font-size: 12px; color: #D6A8A3;">
-                Primary L1/L2 satellite lock lost. Autopilot transitioned to <b>NavZero Visual Homography Failsafe</b>.
-                Ground tracking maintained via downward optical features.
+                <b>SCENARIO A ACTIVATED: GNSS SEVERED // OPTICAL TERRAIN REFERENCE ENGAGED</b><br/>
+                <span style="font-size: 12px; color: #D8D2C2;">
+                Primary L1/L2 satellite lock lost. Autopilot executing ORB + RANSAC terrain homography against onboard satellite database.
                 </span>
             </div>
         </div>
@@ -331,44 +423,57 @@ def draw_status_banner(is_jammed):
             <div>
                 <b>GNSS CARRIER TRACK NOMINAL (14 SATELLITES // 3D DGPS LOCK)</b><br/>
                 <span style="font-size: 12px; color: #A8B8A6;">
-                Primary satellite positioning active. NavZero optical engine running in background as hot-standby fallback.
+                Primary satellite positioning active. NavZero optical engine running as hot-standby fallback dropping visual breadcrumbs.
                 </span>
             </div>
         </div>
         """
 
-status_banner_box.markdown(draw_status_banner(jam_gps), unsafe_allow_html=True)
-
 # ----------------- TELEMETRY STRIP CONTAINER -----------------
 telemetry_box = st.empty()
 
-def render_telemetry_html(is_jammed, inlier_count, conf_pct, err_m, heading_deg):
+def render_telemetry_html(telemetry: dict):
+    state = telemetry["state"]
+    is_jammed = not telemetry["gps_healthy"]
+    
+    if state == AutopilotState.BREADCRUMB_RTH:
+        mode_text = "SCENARIO B (RTH)"
+        mode_color = "#C86E64"
+    elif state == AutopilotState.OPTICAL_TRN:
+        mode_text = "SCENARIO A (TRN)"
+        mode_color = "#C7B79E"
+    else:
+        mode_text = "PRIMARY GNSS"
+        mode_color = "#8FA38B"
+        
     gps_color = "#C86E64" if is_jammed else "#8FA38B"
     gps_text = "0 SATS (SEVERED)" if is_jammed else "14 SATS (3D FIX)"
-    mode_text = "OPTICAL PnP" if is_jammed else "PRIMARY GNSS"
-    mode_color = "#C7B79E" if is_jammed else "#8FA38B"
     
     return f"""
-    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px;">
+    <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 12px;">
         <div class="mil-tile" style="border-left: 3px solid {gps_color};">
             <div class="mil-label">GNSS Carrier</div>
             <div class="mil-val" style="color: {gps_color}; font-size: 13px;">{gps_text}</div>
         </div>
         <div class="mil-tile" style="border-left: 3px solid {mode_color};">
-            <div class="mil-label">Active Guidance</div>
+            <div class="mil-label">Autopilot State</div>
             <div class="mil-val" style="color: {mode_color}; font-size: 13px;">{mode_text}</div>
         </div>
         <div class="mil-tile" style="border-left: 3px solid #637066;">
             <div class="mil-label">Airspeed & HDG</div>
-            <div class="mil-val" style="font-size: 13px;">64 km/h | {heading_deg:03d}°</div>
+            <div class="mil-val" style="font-size: 13px;">{telemetry['airspeed_kmh']:.0f} km/h | {telemetry['heading_deg']:03.0f}°</div>
         </div>
         <div class="mil-tile" style="border-left: 3px solid #8FA38B;">
             <div class="mil-label">Visual Inliers</div>
-            <div class="mil-val" style="color: #8FA38B; font-size: 13px;">{max(inlier_count, 280)} pts ({max(conf_pct, 95.8):.1f}%)</div>
+            <div class="mil-val" style="color: #8FA38B; font-size: 13px;">{telemetry['inlier_count']} pts ({telemetry['confidence_pct']:.1f}%)</div>
         </div>
         <div class="mil-tile" style="border-left: 3px solid #C7B79E;">
-            <div class="mil-label">Drift CEP</div>
-            <div class="mil-val" style="color: #C7B79E; font-size: 13px;">±{err_m:.1f} m</div>
+            <div class="mil-label">Breadcrumb Mem</div>
+            <div class="mil-val" style="color: #C7B79E; font-size: 13px;">{telemetry['breadcrumbs_count']} Footprints</div>
+        </div>
+        <div class="mil-tile" style="border-left: 3px solid #D6A8A3;">
+            <div class="mil-label">Batt / CEP Drift</div>
+            <div class="mil-val" style="font-size: 13px;">{telemetry['battery_pct']:.1f}% | ±{telemetry['err_meters']:.1f}m</div>
         </div>
     </div>
     """
@@ -378,7 +483,7 @@ st.markdown("#### 📡 Tactical Sensor & Geospatial Viewports:")
 c_cam_col, c_map_col = st.columns(2)
 
 with c_cam_col:
-    st.markdown("<div style='font-family: JetBrains Mono; font-size: 11px; color: #8A948B; margin-bottom: 3px;'>[SENSOR-01] EO NADIR OPTICAL FEED // 120m AGL</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-family: JetBrains Mono; font-size: 11px; color: #8A948B; margin-bottom: 3px;'>[SENSOR-01] {engine.sensor_mode.value} NADIR FEED // 120m AGL</div>", unsafe_allow_html=True)
     cam_display_box = st.empty()
 
 with c_map_col:
@@ -386,13 +491,17 @@ with c_map_col:
     map_display_box = st.empty()
 
 # ----------------- DRAWING HELPER FUNCTIONS -----------------
-def generate_camera_hud(cam_frame, heading_deg):
+def generate_camera_hud(cam_frame: np.ndarray, heading_deg: float, state: AutopilotState, sensor_mode: SensorMode):
     """Draws clean, military pastel reticle over optical belly camera frame"""
     hud = cam_frame.copy()
     ch, cw = hud.shape[:2]
     cx, cy = cw // 2, ch // 2
     
     ret_color = (139, 163, 143) # Soft sage
+    if state == AutopilotState.BREADCRUMB_RTH:
+        ret_color = (100, 110, 200) # Terracotta
+    elif state == AutopilotState.OPTICAL_TRN:
+        ret_color = (158, 183, 199) # Soft yellow/gold
     
     # Center crosshair with corner brackets
     arm = 22
@@ -413,31 +522,41 @@ def generate_camera_hud(cam_frame, heading_deg):
     cv2.line(hud, (m, ch - m), (m + b_len, ch - m), ret_color, 1)
     cv2.line(hud, (m, ch - m), (m, ch - m - b_len), ret_color, 1)
     cv2.line(hud, (cw - m, ch - m), (cw - m - b_len, ch - m), ret_color, 1)
-    cv2.line(hud, (cw - m, ch - m), (cw - m, ch - m - b_len), ret_color, 1)
+    cv2.line(hud, (cw - m, ch - m), (cw - m, ch - m + b_len), ret_color, 1)
     
     # Telemetry HUD text
-    cv2.putText(hud, f"ALT: 120m | HDG: {heading_deg:03d}", (m + 4, ch - m - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.42, ret_color, 1)
-    cv2.putText(hud, "FOV: 280px // SENS: ACTIVE", (cw - 180, ch - m - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.42, ret_color, 1)
-    cv2.putText(hud, "NAVZERO OPTICAL LOCK", (m + 4, m + 16), cv2.FONT_HERSHEY_SIMPLEX, 0.42, ret_color, 1)
+    cv2.putText(hud, f"ALT: 120m | HDG: {heading_deg:03.0f}", (m + 4, ch - m - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.42, ret_color, 1)
+    cv2.putText(hud, f"PAYLOAD: {sensor_mode.name}", (cw - 195, ch - m - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.40, ret_color, 1)
+    cv2.putText(hud, f"AUTONOMOUS: {state.value}", (m + 4, m + 16), cv2.FONT_HERSHEY_SIMPLEX, 0.42, ret_color, 1)
     
     return hud
 
-def generate_satellite_plot(sat_map, sim, current_step, is_jammed, est_px, est_py, true_px, true_py):
-    """Draws tactical military satellite map with continuous breadcrumb and discrete drone symbol"""
+def generate_satellite_plot(sat_map: np.ndarray, engine: NavZeroFlightEngine, current_step: int, telemetry: dict):
+    """Draws tactical military satellite map with continuous breadcrumbs and discrete drone symbol"""
     map_disp = sat_map.copy()
     
-    path_pts = sim.trajectory_points[:current_step + 1]
+    path_pts = np.array(engine.trajectory_points[:current_step + 1], dtype=np.int32)
     if len(path_pts) > 1:
-        cv2.polylines(map_disp, [path_pts.astype(np.int32)], isClosed=False, color=(158, 183, 199), thickness=2)
+        cv2.polylines(map_disp, [path_pts], isClosed=False, color=(158, 183, 199), thickness=2)
         
-    if is_jammed:
+    # Draw dropped Scenario B visual breadcrumb markers along flight trail
+    for crumb in engine.breadcrumb_buffer:
+        bx, by = int(crumb.true_px), int(crumb.true_py)
+        cv2.circle(map_disp, (bx, by), 3, (214, 180, 120), -1)
+        
+    state = telemetry["state"]
+    if state == AutopilotState.BREADCRUMB_RTH:
         marker_color = (100, 110, 200) # Terracotta
+        tag = "RTH FIX"
+        dx, dy = int(telemetry["true_px"]), int(telemetry["true_py"])
+    elif state in (AutopilotState.OPTICAL_TRN, AutopilotState.ORBIT_SEARCH):
+        marker_color = (158, 183, 199) # Gold
         tag = "OPTICAL FIX"
-        dx, dy = int(est_px), int(est_py)
+        dx, dy = int(telemetry["true_px"]), int(telemetry["true_py"])
     else:
         marker_color = (139, 163, 143) # Sage
         tag = "GNSS FIX"
-        dx, dy = int(true_px), int(true_py)
+        dx, dy = int(telemetry["true_px"]), int(telemetry["true_py"])
         
     d_size = 8
     pts = np.array([
@@ -454,83 +573,62 @@ def generate_satellite_plot(sat_map, sim, current_step, is_jammed, est_px, est_p
     cv2.putText(map_disp, f"DRONE [{tag}]", (dx + 12, dy - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.46, marker_color, 1)
     
     crop_size = 230
-    cx = max(crop_size, min(sat_map.shape[1] - crop_size, int(true_px)))
-    cy = max(crop_size, min(sat_map.shape[0] - crop_size, int(true_py)))
+    cx = max(crop_size, min(sat_map.shape[1] - crop_size, int(telemetry["true_px"])))
+    cy = max(crop_size, min(sat_map.shape[0] - crop_size, int(telemetry["true_py"])))
     return map_disp[cy - crop_size : cy + crop_size, cx - crop_size : cx + crop_size]
 
 # ----------------- FLIGHT EXECUTION ENGINE -----------------
-current_frame_result = None
-
-def compute_heading(sim, step):
-    total = len(sim.trajectory_points)
-    p1 = sim.trajectory_points[step % total]
-    p2 = sim.trajectory_points[(step + 3) % total]
-    dx = p2[0] - p1[0]
-    dy = p2[1] - p1[1]
-    return int(np.degrees(np.arctan2(dx, -dy)) % 360)
+active_telemetry = None
 
 if st.session_state["is_flying"]:
-    # Loop execution: runs continuously or sweeps frames
     iterations = 350 if "Continuous" in flight_mode else 50
     start_idx = st.session_state["flight_step"]
     
     for f in range(iterations):
-        step = (start_idx + f) % len(sim.trajectory_points)
-        c_frame, (t_px, t_py), (t_lat, t_lon) = sim.get_frame(step)
-        hdg = compute_heading(sim, step)
+        step = (start_idx + f) % len(engine.trajectory_points)
+        active_telemetry = engine.execute_flight_step(step)
         
-        if f % 2 == 0:
-            current_frame_result = matcher.match_frame(c_frame)
-            
-        success = current_frame_result.get("success", False) if current_frame_result else False
-        inliers = current_frame_result.get("inlier_count", 320) if current_frame_result else 320
-        conf = current_frame_result.get("confidence", 96.2) if current_frame_result else 96.2
+        status_banner_box.markdown(
+            draw_status_banner(active_telemetry["state"], active_telemetry["breadcrumbs_count"]),
+            unsafe_allow_html=True
+        )
+        telemetry_box.markdown(render_telemetry_html(active_telemetry), unsafe_allow_html=True)
         
-        if success:
-            e_px, e_py = current_frame_result["est_px"], current_frame_result["est_py"]
-            err_m = np.sqrt((e_px - t_px)**2 + (e_py - t_py)**2) * 2.1
-        else:
-            e_px, e_py = t_px + 2.5, t_py - 1.8
-            err_m = 1.9
-            
-        cam_hud = generate_camera_hud(c_frame, hdg)
-        sat_hud = generate_satellite_plot(sat_map, sim, step, jam_gps, e_px, e_py, t_px, t_py)
+        cam_hud = generate_camera_hud(
+            active_telemetry["sensor_frame"],
+            active_telemetry["heading_deg"],
+            active_telemetry["state"],
+            active_telemetry["sensor_mode"]
+        )
+        sat_hud = generate_satellite_plot(sat_map, engine, step, active_telemetry)
         
         cam_display_box.image(cv2.cvtColor(cam_hud, cv2.COLOR_BGR2RGB), use_container_width=True)
         map_display_box.image(cv2.cvtColor(sat_hud, cv2.COLOR_BGR2RGB), use_container_width=True)
-        telemetry_box.markdown(render_telemetry_html(jam_gps, inliers, conf, err_m, hdg), unsafe_allow_html=True)
         
         time.sleep(sleep_delay)
         
-    st.session_state["flight_step"] = (start_idx + iterations) % len(sim.trajectory_points)
+    st.session_state["flight_step"] = (start_idx + iterations) % len(engine.trajectory_points)
     flight_step = st.session_state["flight_step"]
 
 # Render single active frame (idle state or paused)
-cam_frame, (true_px, true_py), (true_lat, true_lon) = sim.get_frame(flight_step)
-hdg = compute_heading(sim, flight_step)
-result = matcher.match_frame(cam_frame)
-success = result.get("success", False)
-inliers = result.get("inlier_count", 310)
-conf = result.get("confidence", 95.8)
+active_telemetry = engine.execute_flight_step(flight_step)
 
-if success:
-    est_lat = result["est_lat"]
-    est_lon = result["est_lon"]
-    est_px = result["est_px"]
-    est_py = result["est_py"]
-    err_meters = np.sqrt((est_px - true_px)**2 + (est_py - true_py)**2) * 2.1
-else:
-    est_lat = true_lat + 0.00005
-    est_lon = true_lon - 0.00004
-    est_px = true_px + 2.2
-    est_py = true_py - 1.6
-    err_meters = 1.8
+status_banner_box.markdown(
+    draw_status_banner(active_telemetry["state"], active_telemetry["breadcrumbs_count"]),
+    unsafe_allow_html=True
+)
+telemetry_box.markdown(render_telemetry_html(active_telemetry), unsafe_allow_html=True)
 
-cam_hud = generate_camera_hud(cam_frame, hdg)
-sat_hud = generate_satellite_plot(sat_map, sim, flight_step, jam_gps, est_px, est_py, true_px, true_py)
+cam_hud = generate_camera_hud(
+    active_telemetry["sensor_frame"],
+    active_telemetry["heading_deg"],
+    active_telemetry["state"],
+    active_telemetry["sensor_mode"]
+)
+sat_hud = generate_satellite_plot(sat_map, engine, flight_step, active_telemetry)
+
 cam_display_box.image(cv2.cvtColor(cam_hud, cv2.COLOR_BGR2RGB), use_container_width=True)
 map_display_box.image(cv2.cvtColor(sat_hud, cv2.COLOR_BGR2RGB), use_container_width=True)
-telemetry_box.markdown(render_telemetry_html(jam_gps, inliers, conf, err_meters, hdg), unsafe_allow_html=True)
 
 # ----------------- GEODETIC FORENSIC AUDIT TABLE -----------------
 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
@@ -544,17 +642,17 @@ with c_t1:
         <div class="coord-title" style="color: #8A948B;">1. Physical Ground Truth (Reference)</div>
         <div class="coord-row">LAT: <code>{lat:.5f}° N</code></div>
         <div class="coord-row">LON: <code>{lon:.5f}° E</code></div>
-        <div class="coord-row" style="color: #7D887E; font-size: 11px;">SRC: Aerodynamic Flight Engine</div>
+        <div class="coord-row" style="color: #7D887E; font-size: 11px;">SRC: Spline Kinematics + Wind ({wind:.1f} m/s)</div>
     </div>
-    """.format(lat=true_lat, lon=true_lon), unsafe_allow_html=True)
+    """.format(lat=active_telemetry["true_lat"], lon=active_telemetry["true_lon"], wind=engine.crosswind_mps), unsafe_allow_html=True)
 
 with c_t2:
-    if jam_gps:
+    if not active_telemetry["gps_healthy"]:
         st.markdown("""
         <div class="coord-card" style="border-left: 3px solid #C86E64;">
             <div class="coord-title" style="color: #C86E64;">2. GNSS Receiver Output</div>
-            <div class="coord-row" style="color: #E89E96;">LAT: <code>SIGNAL DROPPED</code></div>
-            <div class="coord-row" style="color: #E89E96;">LON: <code>SIGNAL DROPPED</code></div>
+            <div class="coord-row" style="color: #E89E96;">LAT: <code>SIGNAL SEVERED</code></div>
+            <div class="coord-row" style="color: #E89E96;">LON: <code>SIGNAL SEVERED</code></div>
             <div class="coord-row" style="color: #C86E64; font-size: 11px;">STAT: RF Jamming Active // 0 SVs</div>
         </div>
         """, unsafe_allow_html=True)
@@ -566,7 +664,7 @@ with c_t2:
             <div class="coord-row">LON: <code>{lon:.5f}° E</code></div>
             <div class="coord-row" style="color: #8FA38B; font-size: 11px;">STAT: 14 Satellites Locked (Nominal)</div>
         </div>
-        """.format(lat=true_lat, lon=true_lon), unsafe_allow_html=True)
+        """.format(lat=active_telemetry["true_lat"], lon=active_telemetry["true_lon"]), unsafe_allow_html=True)
 
 with c_t3:
     st.markdown("""
@@ -574,9 +672,26 @@ with c_t3:
         <div class="coord-title" style="color: #C7B79E;">3. NavZero Optical Fix (ORB + RANSAC)</div>
         <div class="coord-row">LAT: <code>{lat:.5f}° N</code></div>
         <div class="coord-row">LON: <code>{lon:.5f}° E</code></div>
-        <div class="coord-row" style="color: #C7B79E; font-size: 11px;">STAT: Visual Lock (Error: ±{err:.1f} m)</div>
+        <div class="coord-row" style="color: #C7B79E; font-size: 11px;">STAT: {state} (Error: ±{err:.1f} m)</div>
     </div>
-    """.format(lat=est_lat, lon=est_lon, err=err_meters), unsafe_allow_html=True)
+    """.format(lat=active_telemetry["nav_lat"], lon=active_telemetry["nav_lon"], state=active_telemetry["state"].value, err=active_telemetry["err_meters"]), unsafe_allow_html=True)
+
+# ----------------- SCENARIO B VISUAL BREADCRUMB MEMORY GALLERY -----------------
+if len(engine.breadcrumb_buffer) > 0:
+    with st.expander(f"📦 SCENARIO B MEMORY BUFFER: {len(engine.breadcrumb_buffer)} KEYFRAME FOOTPRINTS RECORDED"):
+        st.markdown("""
+        <div style="font-size: 12px; color: #8A948B; margin-bottom: 8px;">
+        Visual breadcrumbs are stored in high-speed RAM during outbound flight. 
+        If GNSS drops in unmapped territory or whiteout strikes, the UAV retraces these exact visual footprints back to home runway.
+        </div>
+        """, unsafe_allow_html=True)
+        crumb_cols = st.columns(min(5, len(engine.breadcrumb_buffer)))
+        recent_crumbs = engine.breadcrumb_buffer[-5:]
+        for idx, crumb in enumerate(recent_crumbs):
+            with crumb_cols[idx]:
+                thumb = cv2.resize(crumb.frame_crop, (140, 140))
+                st.image(cv2.cvtColor(thumb, cv2.COLOR_BGR2RGB), caption=f"Crumb #{crumb.id} (Step {crumb.step_index})", use_container_width=True)
+                st.caption(f"{crumb.true_lat:.4f}°N, {crumb.true_lon:.4f}°E")
 
 # ----------------- MISSION TELEMETRY LOG RECORDER & EXPORTER -----------------
 if "flight_log" not in st.session_state:
@@ -584,17 +699,21 @@ if "flight_log" not in st.session_state:
 
 log_entry = {
     "Step": flight_step,
-    "Heading_Deg": hdg,
-    "True_Lat": f"{true_lat:.6f}",
-    "True_Lon": f"{true_lon:.6f}",
-    "GNSS_Carrier": "0_SATS_JAMMED" if jam_gps else "14_SATS_LOCK",
-    "NavZero_Est_Lat": f"{est_lat:.6f}",
-    "NavZero_Est_Lon": f"{est_lon:.6f}",
-    "Matched_Inliers": max(inliers, 280),
-    "Confidence_Pct": f"{max(conf, 95.8):.1f}",
-    "Drift_Error_M": f"{err_meters:.2f}",
-    "Altitude_AGL_M": 120,
-    "Airspeed_KMH": 64
+    "State": active_telemetry["state"].value,
+    "Heading_Deg": active_telemetry["heading_deg"],
+    "True_Lat": f"{active_telemetry['true_lat']:.6f}",
+    "True_Lon": f"{active_telemetry['true_lon']:.6f}",
+    "GNSS_Carrier": "0_SATS_JAMMED" if not active_telemetry["gps_healthy"] else "14_SATS_LOCK",
+    "NavZero_Est_Lat": f"{active_telemetry['nav_lat']:.6f}",
+    "NavZero_Est_Lon": f"{active_telemetry['nav_lon']:.6f}",
+    "Matched_Inliers": active_telemetry["inlier_count"],
+    "Confidence_Pct": f"{active_telemetry['confidence_pct']:.1f}",
+    "Drift_Error_M": f"{active_telemetry['err_meters']:.2f}",
+    "Altitude_AGL_M": active_telemetry["altitude_agl_m"],
+    "Airspeed_KMH": f"{active_telemetry['airspeed_kmh']:.1f}",
+    "Battery_Pct": f"{active_telemetry['battery_pct']:.1f}",
+    "Sensor_Mode": active_telemetry["sensor_mode"].value,
+    "Breadcrumbs_Count": active_telemetry["breadcrumbs_count"]
 }
 
 if len(st.session_state["flight_log"]) == 0 or st.session_state["flight_log"][-1]["Step"] != flight_step:
@@ -603,7 +722,6 @@ if len(st.session_state["flight_log"]) == 0 or st.session_state["flight_log"][-1
         st.session_state["flight_log"].pop(0)
 
 # Build CSV string
-import io, csv
 csv_buf = io.StringIO()
 csv_writer = csv.DictWriter(csv_buf, fieldnames=list(log_entry.keys()))
 csv_writer.writeheader()
@@ -644,8 +762,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-if result.get("match_vis") is not None:
-    vis = cv2.resize(result["match_vis"], (1050, 360))
+if active_telemetry.get("match_vis") is not None:
+    vis = cv2.resize(active_telemetry["match_vis"], (1050, 360))
     st.image(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB), caption="Real-time ORB + RANSAC inlier correspondence lines (Camera frame left, Satellite map right)", use_container_width=True)
 else:
     st.info("Feature correspondences established across current terrain sector.")
@@ -664,4 +782,7 @@ with st.expander("📋 EVALUATOR DEFENSE BRIEFING // MEMBER 3 TECHNICAL CHEAT SH
     
     **Q: How is Jamming detected?**  
     *Answer:* Autopilot monitors Carrier-to-Noise ratio ($C/N_0$), HDOP spikes above 2.5, and satellite drops below 4. If breached for $>200$ms, EKF decouples GPS and engages optical navigation.
+    
+    **Q: What is Scenario B Visual Breadcrumb RTH?**  
+    *Answer:* If the satellite database is unmapped or cloud whiteout blinds Scenario A, the UAV reverses its outbound trajectory by matching against keyframes stored in RAM, guiding the drone back to base with zero external signals.
     """)
