@@ -55,13 +55,24 @@ def run_clean_breadcrumb_demo():
 
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
-        print("[ERROR] Could not open webcam index 0.")
+        cap = cv2.VideoCapture(1)
+    if not cap.isOpened():
+        print("[ERROR] Could not open webcam (tried index 0 and 1).")
+        print("[HINT] On macOS, make sure Camera permission is granted:")
+        print("       System Settings -> Privacy & Security -> Camera -> Terminal / IDE")
         return
 
     # Warmup
     ret, frame = cap.read()
     if not ret or frame is None:
+        cap.release()
+        cap = cv2.VideoCapture(1)
+        if cap.isOpened():
+            ret, frame = cap.read()
+    if not ret or frame is None:
         print("[ERROR] Camera frame capture failed.")
+        print("[HINT] On macOS, make sure Camera permission is granted:")
+        print("       System Settings -> Privacy & Security -> Camera -> Terminal / IDE")
         cap.release()
         return
 
