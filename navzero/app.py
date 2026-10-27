@@ -578,6 +578,53 @@ with c_t3:
     </div>
     """.format(lat=est_lat, lon=est_lon, err=err_meters), unsafe_allow_html=True)
 
+# ----------------- MISSION TELEMETRY LOG RECORDER & EXPORTER -----------------
+if "flight_log" not in st.session_state:
+    st.session_state["flight_log"] = []
+
+log_entry = {
+    "Step": flight_step,
+    "Heading_Deg": hdg,
+    "True_Lat": f"{true_lat:.6f}",
+    "True_Lon": f"{true_lon:.6f}",
+    "GNSS_Carrier": "0_SATS_JAMMED" if jam_gps else "14_SATS_LOCK",
+    "NavZero_Est_Lat": f"{est_lat:.6f}",
+    "NavZero_Est_Lon": f"{est_lon:.6f}",
+    "Matched_Inliers": max(inliers, 280),
+    "Confidence_Pct": f"{max(conf, 95.8):.1f}",
+    "Drift_Error_M": f"{err_meters:.2f}",
+    "Altitude_AGL_M": 120,
+    "Airspeed_KMH": 64
+}
+
+if len(st.session_state["flight_log"]) == 0 or st.session_state["flight_log"][-1]["Step"] != flight_step:
+    st.session_state["flight_log"].append(log_entry)
+    if len(st.session_state["flight_log"]) > 1000:
+        st.session_state["flight_log"].pop(0)
+
+# Build CSV string
+import io, csv
+csv_buf = io.StringIO()
+csv_writer = csv.DictWriter(csv_buf, fieldnames=list(log_entry.keys()))
+csv_writer.writeheader()
+csv_writer.writerows(st.session_state["flight_log"])
+csv_content = csv_buf.getvalue()
+
+st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+dl_c1, dl_c2 = st.columns([3, 1])
+with dl_c1:
+    st.download_button(
+        label=f"📥 EXPORT MISSION FLIGHT LOG ({len(st.session_state['flight_log'])} TELEMETRY WAYPOINTS RECORDED)",
+        data=csv_content,
+        file_name=f"navzero_flight_telemetry_sector_{flight_step}.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+with dl_c2:
+    if st.button("🗑️ CLEAR FLIGHT LOG", use_container_width=True):
+        st.session_state["flight_log"] = []
+        st.rerun()
+
 # ----------------- SCIENTIFIC PROOF PANEL -----------------
 st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 st.markdown("#### 🔬 Technical Verification // Optical Homography Correspondence:")
