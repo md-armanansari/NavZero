@@ -134,6 +134,7 @@ def run_drone_mission_sim():
 
     jammed = False
     rth_active = False
+    patrol_mode = False
 
     while True:
         t_now = time.perf_counter()
@@ -144,6 +145,10 @@ def run_drone_mission_sim():
             # Turn drone back towards starting point
             autopilot.heading_deg = 225.0  # Reverse heading
             autopilot.speed_mps = 22.0
+        elif patrol_mode:
+            # Orbit patrol: continuous circular banking (35 deg/sec)
+            autopilot.heading_deg = (autopilot.heading_deg + 35.0 * dt) % 360.0
+            autopilot.speed_mps = 16.0
 
         autopilot.update_physics(dt)
 
@@ -191,10 +196,33 @@ def run_drone_mission_sim():
         autopilot.inject_vision_estimate(autopilot.lat, autopilot.lon, inliers, inlier_ratio)
 
         # ----------------- COCKPIT RENDER -----------------
-        # Left side: Downward Drone Camera with HUD overlay
+        # Left side: Downward Drone Camera with Military Aviation HUD overlay
         cam_disp = cv2.resize(cam_frame, (480, 480))
-        cv2.drawMarker(cam_disp, (240, 240), (0, 255, 0), cv2.MARKER_CROSS, 30, 2)
-        cv2.circle(cam_disp, (240, 240), 40, (0, 255, 0), 1)
+        ch, cw = cam_disp.shape[:2]
+        cx, cy = cw // 2, ch // 2
+        
+        hud_color = (0, 0, 255) if jammed else (0, 255, 120)
+        
+        # 1. Artificial Horizon Pitch Waterline (Aircraft Reticle)
+        cv2.line(cam_disp, (cx - 50, cy), (cx - 15, cy), hud_color, 2)
+        cv2.line(cam_disp, (cx + 15, cy), (cx + 50, cy), hud_color, 2)
+        cv2.circle(cam_disp, (cx, cy), 5, hud_color, 1)
+        # Pitch ticks (+10 deg, -10 deg)
+        cv2.line(cam_disp, (cx - 25, cy - 25), (cx + 25, cy - 25), hud_color, 1)
+        cv2.putText(cam_disp, "+10", (cx + 30, cy - 22), cv2.FONT_HERSHEY_SIMPLEX, 0.35, hud_color, 1)
+        cv2.line(cam_disp, (cx - 25, cy + 25), (cx + 25, cy + 25), hud_color, 1)
+        cv2.putText(cam_disp, "-10", (cx + 30, cy + 28), cv2.FONT_HERSHEY_SIMPLEX, 0.35, hud_color, 1)
+        
+        # 2. Compass Heading Tape (Top of camera)
+        hdg_val = int(autopilot.heading_deg) % 360
+        cv2.rectangle(cam_disp, (cx - 65, 8), (cx + 65, 30), (20, 25, 20), -1)
+        cv2.rectangle(cam_disp, (cx - 65, 8), (cx + 65, 30), hud_color, 1)
+        hdg_str = f"HDG: {hdg_val:03d} DEG"
+        cv2.putText(cam_disp, hdg_str, (cx - 55, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.45, hud_color, 1)
+        
+        # 3. Altitude & Airspeed Tapes
+        cv2.putText(cam_disp, f"IAS: {autopilot.speed_mps * 3.6:.0f}KMH", (12, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.42, hud_color, 1)
+        cv2.putText(cam_disp, f"ALT: {autopilot.alt:.0f}M", (cw - 85, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.42, hud_color, 1)
 
         # Right side: Satellite Map with Drone Position and Waypoint Trajectory
         map_disp = cv2.resize(sat_map, (640, 480))
@@ -202,14 +230,16 @@ def run_drone_mission_sim():
         scale_y = 480 / map_h
 
         # Draw trajectory breadcrumbs
-        for b_lat, b_lon in autopilot.breadcrumbs[-60:]:
+        for b_lat, b_lon in autopilot.breadcrumbs[-80:]:
             bx, by = geo.map_to_pixel(b_lon, b_lat)
             cv2.circle(map_disp, (int(bx * scale_x), int(by * scale_y)), 2, (0, 255, 255), -1)
 
         # Draw current drone position on map
         d_cx, d_cy = int(px_int * scale_x), int(py_int * scale_y)
-        cv2.circle(map_disp, (d_cx, d_cy), 8, (0, 0, 255) if jammed else (0, 255, 0), -1)
-        cv2.circle(map_disp, (d_cx, d_cy), 18, (0, 0, 255) if jammed else (0, 255, 0), 2)
+        marker_col = (0, 0, 255) if jammed else (0, 255, 0)
+        cv2.circle(map_disp, (d_cx, d_cy), 8, marker_col, -1)
+        cv2.circle(map_disp, (d_cx, d_cy), 18, marker_col, 2)
+        cv2.putText(map_disp, "UAV-ALPHA", (d_cx + 12, d_cy - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.45, marker_col, 1)
 
         # Combine side-by-side
         cockpit = np.hstack([cam_disp, map_disp])
@@ -217,11 +247,11 @@ def run_drone_mission_sim():
         # Render Top Telemetry Bar
         top_bar = np.zeros((65, cockpit.shape[1], 3), dtype=np.uint8)
         gps_color = (0, 0, 255) if jammed else (0, 255, 0)
-        gps_txt = "GPS: JAMMED [0 SATS]" if jammed else "GPS: ACTIVE [14 SATS 3D FIX]"
-        mode_txt = "AUTO-RETURN (V-RTH)" if rth_active else autopilot.nav_mode
+        gps_txt = "GNSS: JAMMED [0 SATS]" if jammed else "GNSS: ACTIVE [14 SATS 3D FIX]"
+        mode_txt = "AUTO-RETURN (V-RTH)" if rth_active else ("ORBIT PATROL" if patrol_mode else autopilot.nav_mode)
 
-        cv2.putText(top_bar, f"MISSION STATUS: {mode_txt}", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-        cv2.putText(top_bar, gps_txt, (15, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.55, gps_color, 2)
+        cv2.putText(top_bar, f"MISSION: {mode_txt}", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+        cv2.putText(top_bar, gps_txt, (15, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.52, gps_color, 2)
 
         cv2.putText(top_bar, f"ALT: {autopilot.alt:.1f}m | SPD: {autopilot.speed_mps * 3.6:.0f} km/h | HDG: {autopilot.heading_deg:.0f}", (495, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
         cv2.putText(top_bar, f"OPTICAL INLIERS: {inliers} ({inlier_ratio*100:.1f}%) | BATTERY: {autopilot.battery_pct:.1f}%", (495, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0) if inliers >= 10 else (0, 165, 255), 2)
@@ -230,7 +260,7 @@ def run_drone_mission_sim():
 
         # Bottom Instructions Footer
         footer = np.zeros((30, cockpit.shape[1], 3), dtype=np.uint8)
-        cv2.putText(footer, "Press [J] to Jam GPS | Press [R] to Trigger Visual Return-to-Home | [Q] to Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (180, 180, 180), 1)
+        cv2.putText(footer, "[J] Jam GNSS | [R] Visual RTH | [P] Orbit Patrol | [+/-] Speed | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
         final_ui = np.vstack([final_ui, footer])
 
         cv2.imshow(window_name, final_ui)
@@ -244,6 +274,13 @@ def run_drone_mission_sim():
         elif key == ord('r') or key == ord('R'):
             rth_active = not rth_active
             print(f"[EVENT] Autonomous Visual Return-to-Home switched to: {rth_active}")
+        elif key == ord('p') or key == ord('P'):
+            patrol_mode = not patrol_mode
+            print(f"[EVENT] Orbit Patrol mode switched to: {patrol_mode}")
+        elif key == ord('+') or key == ord('='):
+            autopilot.speed_mps = min(35.0, autopilot.speed_mps + 2.0)
+        elif key == ord('-') or key == ord('_'):
+            autopilot.speed_mps = max(5.0, autopilot.speed_mps - 2.0)
 
     cv2.destroyAllWindows()
     print("[INFO] Simulator closed.")
