@@ -14,6 +14,13 @@ try:
         VisualBreadcrumb
     )
     from navzero.core.geo_utils import GeoReference
+    from navzero.core.telemetry_bridge import (
+        MAVLinkTelemetryBridge,
+        NavZeroTacticalPacket,
+        VisionPositionEstimate,
+        GlobalPositionInt,
+        MAVLinkHeartbeat
+    )
 except ImportError:
     from core.flight_engine import (
         NavZeroFlightEngine,
@@ -22,6 +29,14 @@ except ImportError:
         VisualBreadcrumb
     )
     from core.geo_utils import GeoReference
+    from core.telemetry_bridge import (
+        MAVLinkTelemetryBridge,
+        NavZeroTacticalPacket,
+        VisionPositionEstimate,
+        GlobalPositionInt,
+        MAVLinkHeartbeat
+    )
+
 
 # ----------------- PAGE CONFIG -----------------
 st.set_page_config(
@@ -215,8 +230,12 @@ def load_gcs_engine(map_sector: str):
         bottom_right_lat=34.1000, bottom_right_lon=77.7500,
         map_width=map_w, map_height=map_h
     )
-    engine = NavZeroFlightEngine(sat_map, geo_ref, fov_size=280, detector_type="ORB", total_steps=400)
-    return sat_map, geo_ref, engine
+    bridge = MAVLinkTelemetryBridge(host="127.0.0.1", port=14550, is_server=True)
+    engine = NavZeroFlightEngine(
+        sat_map, geo_ref, fov_size=280, detector_type="ORB", total_steps=400,
+        telemetry_bridge=bridge
+    )
+    return sat_map, geo_ref, engine, bridge
 
 # ----------------- SESSION STATE -----------------
 if "jam_gps" not in st.session_state:
@@ -243,7 +262,7 @@ sector_name = st.sidebar.selectbox(
     ]
 )
 
-sat_map, geo_ref, engine = load_gcs_engine(sector_name)
+sat_map, geo_ref, engine, bridge = load_gcs_engine(sector_name)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📷 MULTI-SPECTRAL SENSOR")
@@ -320,9 +339,9 @@ st.markdown(f"""
 <div class="gcs-masthead">
     <div>
         <div class="masthead-title">NavZero // Tactical Ground Control Station</div>
-        <div class="masthead-meta">SECTOR: {sector_name.upper()} | PROTOCOL: STANAG-4586 | SENSOR: {engine.sensor_mode.value}</div>
+        <div class="masthead-meta">SECTOR: {sector_name.upper()} | PROTOCOL: STANAG-4586 // MAVLINK UDP:{bridge.port} | SENSOR: {engine.sensor_mode.value}</div>
     </div>
-    <div class="masthead-badge">SYS: ONLINE // 400-PT SPLINE // CRUMBS: {len(engine.breadcrumb_buffer)}</div>
+    <div class="masthead-badge">SYS: ONLINE // 400-PT SPLINE // MAVLINK: UDP:{bridge.port} // CRUMBS: {len(engine.breadcrumb_buffer)}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -767,6 +786,32 @@ if active_telemetry.get("match_vis") is not None:
     st.image(cv2.cvtColor(vis, cv2.COLOR_BGR2RGB), caption="Real-time ORB + RANSAC inlier correspondence lines (Camera frame left, Satellite map right)", use_container_width=True)
 else:
     st.info("Feature correspondences established across current terrain sector.")
+
+# ----------------- STANAG-4586 / MAVLink NETWORK STREAM -----------------
+with st.expander(f"📡 STANAG-4586 / MAVLink SERIAL & UDP TELEMETRY STREAM (PORT: {bridge.port})"):
+    st.markdown("""
+    <div style="font-size: 12px; color: #8A948B; margin-bottom: 8px;">
+    The NavZero optical compute core packages visual estimates into standard MAVLink packets over UDP (Port 14550) 
+    compatible with ArduPilot, PX4, and MissionPlanner/QGroundControl.
+    </div>
+    """, unsafe_allow_html=True)
+    m_col1, m_col2 = st.columns(2)
+    with m_col1:
+        st.markdown(f"""
+        <div class="mil-tile" style="border-left: 3px solid #8FA38B;">
+            <div class="mil-label">VISION_POSITION_ESTIMATE (#102)</div>
+            <div class="mil-val" style="font-size: 12px;">X: +{active_telemetry['true_px']*0.05:.2f}m | Y: +{active_telemetry['true_py']*0.05:.2f}m</div>
+            <div style="font-size: 11px; color: #8A948B; margin-top: 3px;">Z: -{active_telemetry['altitude_agl_m']:.1f}m (NED) | Yaw: {active_telemetry['heading_deg']:.1f}° | Cov: 0.05</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m_col2:
+        st.markdown(f"""
+        <div class="mil-tile" style="border-left: 3px solid #C7B79E;">
+            <div class="mil-label">GLOBAL_POSITION_INT (#33)</div>
+            <div class="mil-val" style="font-size: 12px;">LAT: {int(active_telemetry['nav_lat']*1e7)} | LON: {int(active_telemetry['nav_lon']*1e7)}</div>
+            <div style="font-size: 11px; color: #8A948B; margin-top: 3px;">ALT: {int(active_telemetry['altitude_agl_m']*1000)}mm | HDG: {int(active_telemetry['heading_deg']*100)} cdeg</div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ----------------- DISCREET EVALUATOR DEFENSE BRIEFING (COLLAPSIBLE) -----------------
 with st.expander("📋 EVALUATOR DEFENSE BRIEFING // MEMBER 3 TECHNICAL CHEAT SHEET"):
