@@ -110,7 +110,7 @@ NavZero/
     │   ├── evaluation.py            # Latency, RMSE, and repeatability testing
     │   ├── image_inspector.py       # Format inspection & memory-safe plotting
     │   └── dashboard_app.py         # Streamlit research evaluation dashboard
-    └── tests/                       # 49 automated unit & integration tests
+    └── tests/                       # 50 automated unit & integration tests
 ```
 
 ---
@@ -160,7 +160,7 @@ Compatible out-of-the-box with **QGroundControl**, **MissionPlanner**, and **Ard
 ---
 
 ## 🧪 Testing & Verification
-Run the 49 automated unit and integration tests:
+Run the 50 automated unit and integration tests:
 ```bash
 pytest vision_localization_research/tests -v
 ```
