@@ -20,14 +20,16 @@ You are the one holding the laptop during the live pitch! While the others speak
 
 ### 2. Detailed Breakdown of the 4 Modules You Built
 
-#### ① Tactical Web Ground Control Station (`navzero/app.py`)
+#### ① Tactical Ground Control Station (`navzero/app.py`)
 * **What it is:** A browser-based tactical ground station running at `http://localhost:8501`.
 * **Where the code lives:** [`navzero/app.py`](file:///c:/Users/hitesh/OneDrive/Desktop/projects/navzero/NavZero/navzero/app.py)
 * **What you built inside it:**
-  - **Dual-Pane Tactical Display:** Live downward camera feed on the left, high-resolution satellite map on the right.
-  - **Dynamic Jamming Banner:** Instantly shifts from `✅ GPS Status: CONNECTED [14 SATS 3D FIX]` to `⚠️ GPS Status: JAMMED / NO SIGNAL — Falling back to Camera Vision Navigation`.
-  - **Visual Proof Expander:** Shows green feature lines connecting camera keypoints to satellite reference landmarks using OpenCV SIFT/ORB.
-  - **Live Geodetic Drift Tracker:** Real-time error metric table comparing Ground Truth vs. GPS Receiver vs. NavZero Optical Estimate in meters.
+  - **Military Pastel / STANAG-4586 Aesthetic:** Deep matte olive-slate interface with muted sage green (`#8FA38B`) and desert sand khaki (`#C7B79E`) accents, built to resemble ruggedized defense hardware.
+  - **Smooth 25 FPS Flight Video Stream:** Click `▶️ RUN FLIGHT DEMO (25 FPS SMOOTH)` to watch the drone glide continuously across Ladakh mountain valleys with Catmull-Rom spline pathing (sub-pixel interpolation).
+  - **Dual-Pane Tactical Display:** Live downward camera feed with soft-sage crosshair HUD on the left, georeferenced satellite tracking plot on the right.
+  - **Dynamic Jamming Banner:** Instantly shifts from `🟢 GNSS CARRIER TRACK NOMINAL (14 SATS)` to terracotta `⚠️ ADVISORY: GNSS RADIO FREQUENCY SEVERED (0 SATS) — Optical Homography Failsafe Active`.
+  - **Visual Proof Diagnostic:** Displays OpenCV ORB + RANSAC inlier lines connecting the live camera frame to the satellite database, proving real-time optical localization.
+  - **Live Geodetic Drift Tracker:** Real-time error metric table comparing Ground Truth vs. GNSS Receiver vs. NavZero Optical Estimate in meters.
 
 #### ② Real Drone Autopilot & Cockpit Simulator (`scripts/run_drone_sim.py`)
 * **What it is:** A 30 FPS dark-mode military cockpit HUD built with OpenCV.
