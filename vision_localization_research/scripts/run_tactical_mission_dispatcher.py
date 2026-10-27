@@ -18,8 +18,10 @@ import numpy as np
 
 # Ensure src is in python path
 repo_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(repo_root.parent))
 sys.path.insert(0, str(repo_root / "src"))
 
+from navzero.core.flight_engine import SensorMode
 from vision_loc.feature_matcher import VisualFeatureMatcher
 from vision_loc.georeference import AffineTransform
 
@@ -127,6 +129,7 @@ def run_tactical_mission_dispatcher():
     fov_size = 200
 
     jammed = False
+    sensor_mode = SensorMode.EO_DAYLIGHT
     breadcrumbs = []
     inliers_count = 0
     search_mode = False
@@ -186,21 +189,17 @@ def run_tactical_mission_dispatcher():
                 else:
                     # 3. GPS JAMMED AND CAMERA IS BLIND (Inliers < 4 over featureless water/fields):
                     # AUTONOMOUS SEARCH & RE-ACQUISITION MODE:
-                    # Drone DOES NOT STOP or fall! It maintains cruise airspeed and banks into an active
-                    # scanning spiral / loiter search to find recognizable terrain landmarks!
                     search_mode = True
                     speed_px_per_sec = 38.0
-                    # Bank in a smooth scanning orbit (approx 50 deg/sec turn rate)
                     heading_deg = (heading_deg + 50.0 * dt) % 360.0
 
-                    # Keep search safely away from map edges by steering gently toward center
                     margin_check = fov_size // 2 + 35
                     if drone_x < margin_check or drone_x > map_w - margin_check or drone_y < margin_check or drone_y > map_h - margin_check:
                         center_dx = (map_w / 2.0) - drone_x
                         center_dy = (map_h / 2.0) - drone_y
                         heading_deg = math.degrees(math.atan2(center_dy, center_dx))
             else:
-                # Arrived at destination (Only possible if vision locks on or GPS is on!)
+                # Arrived at destination
                 if (not jammed) or (inliers_count >= 4):
                     if len(waypoint_queue) > 0:
                         target_point = waypoint_queue.pop(0)
@@ -219,7 +218,7 @@ def run_tactical_mission_dispatcher():
         drone_x += speed_px_per_sec * math.cos(rad) * dt
         drone_y += speed_px_per_sec * math.sin(rad) * dt
 
-        # Clamp inside boundaries (allows drone to reach targets anywhere on map)
+        # Clamp inside boundaries
         margin = 15
         drone_x = max(margin, min(map_w - margin, drone_x))
         drone_y = max(margin, min(map_h - margin, drone_y))
@@ -235,6 +234,17 @@ def run_tactical_mission_dispatcher():
         py = cy + pad
         half_fov = fov_size // 2
         cam_crop = padded_sat_map[py - half_fov : py + half_fov, px - half_fov : px + half_fov].copy()
+
+        # Multi-Spectral Sensor Transform
+        if sensor_mode == SensorMode.IR_WHITE_HOT:
+            gray = cv2.cvtColor(cam_crop, cv2.COLOR_BGR2GRAY)
+            clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8, 8))
+            thermal_gray = clahe.apply(gray)
+            cam_crop = cv2.cvtColor(cv2.bitwise_not(thermal_gray), cv2.COLOR_GRAY2BGR)
+        elif sensor_mode == SensorMode.IR_IRONBOW:
+            gray = cv2.cvtColor(cam_crop, cv2.COLOR_BGR2GRAY)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+            cam_crop = cv2.applyColorMap(clahe.apply(gray), cv2.COLORMAP_INFERNO)
 
         # Slight 10-degree optical tilt in flight
         rot_mat = cv2.getRotationMatrix2D((cam_crop.shape[1] // 2, cam_crop.shape[0] // 2), 10.0, 1.0)
@@ -272,6 +282,7 @@ def run_tactical_mission_dispatcher():
         cv2.circle(cam_disp, (disp_h // 2, disp_h // 2), 35, (0, 255, 0), 1)
         cv2.drawMarker(cam_disp, (disp_h // 2, disp_h // 2), (0, 255, 0), cv2.MARKER_CROSS, 25, 2)
         cv2.putText(cam_disp, "LIVE DRONE CAMERA VIEW", (15, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 2)
+        cv2.putText(cam_disp, f"PAYLOAD: {sensor_mode.value}", (15, disp_h - 15), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (0, 255, 0), 1)
 
         map_disp = real_sat_map.copy()
 
@@ -353,7 +364,7 @@ def run_tactical_mission_dispatcher():
 
         # Footer instructions
         footer = np.zeros((30, combined_view.shape[1], 3), dtype=np.uint8)
-        cv2.putText(footer, "RIGHT-CLICK: Home | LEFT-CLICK: Add Waypoints | [C] Clear | [R] Recall | [J] Jam | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
+        cv2.putText(footer, "RIGHT-CLICK: Home | LEFT-CLICK: Add WPs | [S] EO/IR | [C] Clear | [R] Recall | [J] Jam | [Q] Exit", (15, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (180, 180, 180), 1)
         final_gui = np.vstack([final_gui, footer])
 
         cv2.imshow(window_name, final_gui)
@@ -364,6 +375,11 @@ def run_tactical_mission_dispatcher():
         elif key == ord("j") or key == ord("J"):
             jammed = not jammed
             print(f"[EVENT] GPS Jamming: {jammed}")
+        elif key == ord("s") or key == ord("S"):
+            modes = [SensorMode.EO_DAYLIGHT, SensorMode.IR_WHITE_HOT, SensorMode.IR_IRONBOW]
+            curr_idx = modes.index(sensor_mode)
+            sensor_mode = modes[(curr_idx + 1) % len(modes)]
+            print(f"[EVENT] Tactical Dispatcher sensor mode: {sensor_mode.value}")
         elif key == ord("r") or key == ord("R"):
             flight_phase = "RETURNING_HOME"
             print("[EVENT] RECALL COMMAND: Drone returning to Home Base!")
