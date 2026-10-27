@@ -85,13 +85,17 @@ streamlit run navzero/app.py
 ```
 Open `http://localhost:8501` to view the live optical feed, tactical map, and test GPS jamming fallback.
 
-### 3. Launch Drone Cockpit Simulator
+### 3. Launch Tactical Ladakh Mission Dispatcher
 ```bash
-python vision_localization_research/scripts/run_drone_sim.py
+python vision_localization_research/scripts/run_tactical_mission_dispatcher.py
 ```
-* **`[J]`**: Toggle Electronic Warfare GPS Jamming ON / OFF
-* **`[R]`**: Engage Autonomous Visual Return-to-Home (V-RTH)
+* **Right-Click**: Set Home Base runway location on the satellite map
+* **Left-Click**: Dispatch drone autonomously to any target waypoint across Ladakh terrain
+* **`[J]`**: Toggle Electronic Warfare GPS Jamming ON / OFF (demonstrates optical lock fallback)
+* **`[R]`**: Trigger Autonomous Return-to-Home (drone retraces course back to runway)
 * **`[Q]`**: Exit
+
+*(Note: The linear telemetry HUD simulator is also available via `python vision_localization_research/scripts/run_drone_sim.py`)*
 
 ---
 
