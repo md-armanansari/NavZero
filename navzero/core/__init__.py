@@ -9,11 +9,24 @@ from navzero.core.flight_engine import (
     VisualBreadcrumb
 )
 from navzero.core.geo_utils import GeoReference
+from navzero.core.telemetry_bridge import (
+    MAVLinkTelemetryBridge,
+    NavZeroTacticalPacket,
+    VisionPositionEstimate,
+    GlobalPositionInt,
+    MAVLinkHeartbeat
+)
 
 __all__ = [
     "NavZeroFlightEngine",
     "SensorMode",
     "AutopilotState",
     "VisualBreadcrumb",
-    "GeoReference"
+    "GeoReference",
+    "MAVLinkTelemetryBridge",
+    "NavZeroTacticalPacket",
+    "VisionPositionEstimate",
+    "GlobalPositionInt",
+    "MAVLinkHeartbeat"
 ]
+
