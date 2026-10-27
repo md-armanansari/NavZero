@@ -34,12 +34,22 @@ def on_mouse_click(event, x, y, flags, param):
     """Handles user mission planning clicks."""
     global target_point, home_point, flight_phase
     disp_h = 520
+    header_h = 65
     map_offset_x = disp_h
 
-    if x >= map_offset_x:
+    # Only accept clicks within the map pane (below the 65px header HUD)
+    if x >= map_offset_x and y >= header_h and y < (header_h + disp_h):
         scale_map = param["scale_map"]
+        map_w = param.get("map_w", 2000)
+        map_h = param.get("map_h", 2000)
+
+        # Accurately compute map pixel coordinates by compensating for the top header
         orig_map_x = int((x - map_offset_x) / scale_map)
-        orig_map_y = int(y / scale_map)
+        orig_map_y = int((y - header_h) / scale_map)
+
+        # Clamp cleanly to valid map boundaries
+        orig_map_x = max(15, min(map_w - 15, orig_map_x))
+        orig_map_y = max(15, min(map_h - 15, orig_map_y))
 
         # RIGHT CLICK: Set Home Base Address
         if event == cv2.EVENT_RBUTTONDOWN:
@@ -112,13 +122,20 @@ def run_tactical_mission_dispatcher():
 
     jammed = False
     breadcrumbs = []
+    inliers_count = 0
+    search_mode = False
+    reacquired_timer = 0.0
 
     disp_h = 520
     scale_map = disp_h / map_h
     map_resized_w = int(map_w * scale_map)
 
+    # Pad map with reflection so camera can look anywhere, even right at the edges of the map
+    pad = fov_size
+    padded_sat_map = cv2.copyMakeBorder(real_sat_map, pad, pad, pad, pad, cv2.BORDER_REFLECT)
+
     cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
-    cv2.setMouseCallback(window_name, on_mouse_click, {"scale_map": scale_map})
+    cv2.setMouseCallback(window_name, on_mouse_click, {"scale_map": scale_map, "map_w": map_w, "map_h": map_h})
 
     t_prev = time.perf_counter()
 
@@ -150,18 +167,32 @@ def run_tactical_mission_dispatcher():
                 if not jammed:
                     heading_deg = math.degrees(math.atan2(dy, dx))
                     speed_px_per_sec = 45.0
+                    search_mode = False
                 # 2. GPS JAMMED BUT CAMERA SEES LANDMARKS (Inliers >= 4):
                 # Computer Vision replaces GPS and navigates with precision!
                 elif inliers_count >= 4:
+                    if search_mode:
+                        search_mode = False
+                        reacquired_timer = 2.5
+                        print(f"\n>>> [OPTICAL RE-ACQUISITION] Landmark identified ({inliers_count} inliers)! Resuming direct target heading.")
                     heading_deg = math.degrees(math.atan2(dy, dx))
                     speed_px_per_sec = 45.0
                 else:
-                    # 3. GPS JAMMED AND CAMERA IS BLIND (Inliers < 4 over water/clouds):
-                    # The drone has NO GPS and NO VISION. It is COMPLETELY LOST!
-                    # It cannot know its location. It FREEZES forward navigation and drifts into emergency hover!
-                    drift_noise = np.random.uniform(-45.0, 45.0)
-                    heading_deg = (heading_deg + drift_noise) % 360.0
-                    speed_px_per_sec = 5.0 # Uncontrolled drifting in the wind!
+                    # 3. GPS JAMMED AND CAMERA IS BLIND (Inliers < 4 over featureless water/fields):
+                    # AUTONOMOUS SEARCH & RE-ACQUISITION MODE:
+                    # Drone DOES NOT STOP or fall! It maintains cruise airspeed and banks into an active
+                    # scanning spiral / loiter search to find recognizable terrain landmarks!
+                    search_mode = True
+                    speed_px_per_sec = 38.0
+                    # Bank in a smooth scanning orbit (approx 50 deg/sec turn rate)
+                    heading_deg = (heading_deg + 50.0 * dt) % 360.0
+
+                    # Keep search safely away from map edges by steering gently toward center
+                    margin_check = fov_size // 2 + 35
+                    if drone_x < margin_check or drone_x > map_w - margin_check or drone_y < margin_check or drone_y > map_h - margin_check:
+                        center_dx = (map_w / 2.0) - drone_x
+                        center_dy = (map_h / 2.0) - drone_y
+                        heading_deg = math.degrees(math.atan2(center_dy, center_dx))
             else:
                 # Arrived at destination (Only possible if vision locks on or GPS is on!)
                 if (not jammed) or (inliers_count >= 4):
@@ -177,8 +208,8 @@ def run_tactical_mission_dispatcher():
         drone_x += speed_px_per_sec * math.cos(rad) * dt
         drone_y += speed_px_per_sec * math.sin(rad) * dt
 
-        # Clamp inside boundaries
-        margin = fov_size // 2 + 10
+        # Clamp inside boundaries (allows drone to reach targets anywhere on map)
+        margin = 15
         drone_x = max(margin, min(map_w - margin, drone_x))
         drone_y = max(margin, min(map_h - margin, drone_y))
 
@@ -189,12 +220,10 @@ def run_tactical_mission_dispatcher():
 
         # ----------------- LIVE CAMERA CROP & MATCHING -----------------
         cx, cy = int(drone_x), int(drone_y)
-        x1 = max(0, cx - fov_size // 2)
-        y1 = max(0, cy - fov_size // 2)
-        x2 = min(map_w, cx + fov_size // 2)
-        y2 = min(map_h, cy + fov_size // 2)
-
-        cam_crop = real_sat_map[y1:y2, x1:x2].copy()
+        px = cx + pad
+        py = cy + pad
+        half_fov = fov_size // 2
+        cam_crop = padded_sat_map[py - half_fov : py + half_fov, px - half_fov : px + half_fov].copy()
 
         # Slight 10-degree optical tilt in flight
         rot_mat = cv2.getRotationMatrix2D((cam_crop.shape[1] // 2, cam_crop.shape[0] // 2), 10.0, 1.0)
@@ -274,6 +303,10 @@ def run_tactical_mission_dispatcher():
         gps_txt = "GPS: JAMMED [0 SATS]" if jammed else "GPS: ACTIVE [14 SATS 3D FIX]"
         gps_col = (0, 0, 255) if jammed else (0, 255, 0)
 
+        # Update re-acquisition visual alert timer
+        if reacquired_timer > 0:
+            reacquired_timer = max(0.0, reacquired_timer - dt)
+
         # Status text
         status_descriptions = {
             "IDLE": "READY (WAITING FOR TARGET)",
@@ -283,8 +316,16 @@ def run_tactical_mission_dispatcher():
             "TOUCHDOWN_AT_HOME": "TOUCHDOWN CONFIRMED AT HOME BASE"
         }
         mode_txt = status_descriptions.get(flight_phase, flight_phase)
+        mode_col = (255, 255, 255)
 
-        cv2.putText(header, f"MISSION: {mode_txt}", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
+        if search_mode:
+            mode_txt = "AUTONOMOUS SEARCH: SCANNING TERRAIN FOR KNOWN LANDMARKS..."
+            mode_col = (0, 165, 255)
+        elif reacquired_timer > 0:
+            mode_txt = "LANDMARK RE-ACQUIRED! RESUMING MISSION COURSE"
+            mode_col = (0, 255, 0)
+
+        cv2.putText(header, f"MISSION: {mode_txt}", (15, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, mode_col, 2)
         cv2.putText(header, gps_txt, (15, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.52, gps_col, 2)
 
         cv2.putText(header, f"LAT: {curr_lat:.4f} N | LON: {curr_lon:.4f} E | HDG: {heading_deg:.0f}", (535, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (220, 220, 220), 1)
