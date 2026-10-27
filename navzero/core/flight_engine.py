@@ -15,6 +15,12 @@ import cv2
 import numpy as np
 
 from navzero.core.geo_utils import GeoReference
+from navzero.core.telemetry_bridge import (
+    MAVLinkTelemetryBridge,
+    NavZeroTacticalPacket,
+    VisionPositionEstimate
+)
+
 
 
 class SensorMode(str, Enum):
@@ -58,13 +64,15 @@ class NavZeroFlightEngine:
         geo_ref: GeoReference,
         fov_size: int = 280,
         detector_type: str = "ORB",
-        total_steps: int = 400
+        total_steps: int = 400,
+        telemetry_bridge: Optional[MAVLinkTelemetryBridge] = None
     ):
         self.satellite_map = satellite_map
         self.geo_ref = geo_ref
         self.fov_size = fov_size
         self.map_h, self.map_w = satellite_map.shape[:2]
         self.total_steps = total_steps
+        self.telemetry_bridge = telemetry_bridge
 
         # 1. Feature Detector Setup (ORB default for 30+ FPS edge compute)
         self.detector_type = detector_type
@@ -370,6 +378,28 @@ class NavZeroFlightEngine:
         # Realistic Battery drain
         self.battery_pct = max(0.0, 98.0 - (self.step_idx / float(self.total_steps)) * 14.0)
 
+        # Broadcast STANAG-4586 / MAVLink Telemetry Packet
+        tactical_packet = NavZeroTacticalPacket(
+            step=self.step_idx,
+            state=self.state.value,
+            sensor_mode=self.sensor_mode.value,
+            gps_healthy=self.gps_healthy,
+            true_lat=true_lat,
+            true_lon=true_lon,
+            est_lat=nav_lat,
+            est_lon=nav_lon,
+            err_meters=err_meters,
+            heading_deg=self.heading_deg,
+            airspeed_kmh=self.speed_mps * 3.6,
+            altitude_agl_m=self.alt_m,
+            battery_pct=self.battery_pct,
+            inlier_count=inliers,
+            confidence_pct=match_res.get("confidence", 95.8),
+            breadcrumbs_count=len(self.breadcrumb_buffer)
+        )
+        if self.telemetry_bridge:
+            self.telemetry_bridge.broadcast_telemetry(tactical_packet)
+
         return {
             "step": self.step_idx,
             "state": self.state,
@@ -390,5 +420,17 @@ class NavZeroFlightEngine:
             "err_meters": err_meters,
             "match_vis": match_res.get("match_vis"),
             "breadcrumbs_count": len(self.breadcrumb_buffer),
-            "gps_healthy": self.gps_healthy
+            "gps_healthy": self.gps_healthy,
+            "tactical_packet": tactical_packet
         }
+
+    def to_mavlink_vision_estimate(self, local_x_m: float, local_y_m: float) -> VisionPositionEstimate:
+        """Standard MAVLink #102 VISION_POSITION_ESTIMATE packet for Pixhawk EKF3 integration."""
+        return VisionPositionEstimate(
+            usec=int(time.time() * 1e6),
+            x_m=local_x_m,
+            y_m=local_y_m,
+            z_m=-self.alt_m,
+            yaw_rad=math.radians(self.heading_deg)
+        )
+
