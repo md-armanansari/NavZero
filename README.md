@@ -109,7 +109,7 @@ NavZero/
     │   ├── evaluation.py            # Latency, RMSE, and repeatability testing
     │   ├── image_inspector.py       # Format inspection & memory-safe plotting
     │   └── dashboard_app.py         # Streamlit research evaluation dashboard
-    └── tests/                       # 41 automated unit & integration tests
+    └── tests/                       # 45 automated unit & integration tests
 ```
 
 ---
@@ -140,6 +140,7 @@ python vision_localization_research/scripts/run_tactical_mission_dispatcher.py
 ```
 * **Right-Click**: Set Home Base runway location on the satellite map
 * **Left-Click**: Add mission waypoints (`WP-1`, `WP-2`, `WP-3`...) — drone navigates sequentially
+* **`[S]`**: Cycle Multi-Spectral Sensor Payloads (`☀️ EO Daylight` / `🌙 IR FLIR White-Hot` / `🔥 IR Ironbow`)
 * **`[C]`**: Clear current flight plan
 * **`[J]`**: Toggle Electronic Warfare GPS Jamming ON / OFF (demonstrates optical lock fallback)
 * **`[R]`**: Trigger Autonomous Return-to-Home (drone retraces course back to runway)
@@ -150,7 +151,7 @@ python vision_localization_research/scripts/run_tactical_mission_dispatcher.py
 ---
 
 ## 🧪 Testing & Verification
-Run the 41 automated unit and integration tests:
+Run the 45 automated unit and integration tests:
 ```bash
 pytest vision_localization_research/tests -v
 ```
