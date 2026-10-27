@@ -45,8 +45,10 @@ NavZero/
 │   ├── app.py                       # Streamlit Tactical GCS web dashboard
 │   ├── run_navzero.bat              # Windows launcher
 │   ├── run_navzero.sh               # Shell launcher
-│   └── core/                        # Simulator & visual matching modules
-│       ├── geo_utils.py             # Affine coordinate projection
+│   └── core/                        # Unified Autopilot & Perception Stack
+│       ├── __init__.py              # Core package exports
+│       ├── flight_engine.py         # Unified NavZeroFlightEngine & Autonomous Failsafe
+│       ├── geo_utils.py             # Affine coordinate projection & WGS-84 conversion
 │       ├── map_generator.py         # Synthetic terrain generator
 │       ├── terrain_matcher.py       # SIFT/ORB feature matching engine
 │       └── flight_simulator.py      # Catmull-Rom spline trajectory & EW jamming sim
@@ -59,6 +61,7 @@ NavZero/
     │   ├── run_interactive_map_tracker.py  # Click-to-fly terrain dispatcher
     │   ├── run_tactical_mission_dispatcher.py # Multi-waypoint mission planner & RTH
     │   ├── run_breadcrumb_rth.py    # Zero-map reverse visual navigation
+    │   ├── run_clean_breadcrumb_rth.py # Clean teach-and-repeat reverse homing
     │   ├── run_real_aerial_tracker.py # 100% photographic orthophoto tracker
     │   ├── run_live_webcam.py       # Laptop webcam physical feature tracker
     │   ├── run_benchmarks.py        # Automated benchmark runner
@@ -69,7 +72,7 @@ NavZero/
     │   ├── evaluation.py            # Latency, RMSE, and repeatability testing
     │   ├── image_inspector.py       # Format inspection & memory-safe plotting
     │   └── dashboard_app.py         # Streamlit research evaluation dashboard
-    └── tests/                       # 34 automated unit & integration tests
+    └── tests/                       # 41 automated unit & integration tests
 ```
 
 ---
@@ -86,8 +89,11 @@ Double-click `launch_gcs_station.bat` or run:
 ```bash
 streamlit run navzero/app.py
 ```
-* **Interactive Controls:** Toggle `🚨 INJECT ENEMY JAMMING` to simulate EW attacks with real-time audio alerts.
-* **Continuous Flight:** Click `▶️ START CONTINUOUS FLIGHT` to stream live 25 FPS nadir camera telemetry.
+* **Unified Flight Core:** Driven by `NavZeroFlightEngine` with 400-point continuous Catmull-Rom spline flight and STANAG-4586 telemetry.
+* **Multi-Spectral Payloads:** Select between `☀️ EO Daylight`, `🌙 IR FLIR White-Hot` (thermal night vision), and `🔥 IR Ironbow`.
+* **Interactive EW Controls:** Toggle `🚨 INJECT ENEMY JAMMING` to simulate EW attacks with real-time audio alerts.
+* **Environmental Stress:** Inject dynamic crosswinds (up to 20 m/s) and cloud obscuration / whiteout (up to 100%).
+* **Scenario B Memory Buffer:** Visual breadcrumbs are stored in high-speed RAM; view live keyframe footprints in the collapsible gallery.
 * **Mission Export:** Click `📥 EXPORT MISSION FLIGHT LOG` to download geodetic CSV telemetry for battlefield debriefing.
 
 ### 3. Launch Tactical Ladakh Multi-Waypoint Dispatcher
@@ -107,7 +113,7 @@ python vision_localization_research/scripts/run_tactical_mission_dispatcher.py
 ---
 
 ## 🧪 Testing & Verification
-Run the 34 automated unit and integration tests:
+Run the 41 automated unit and integration tests:
 ```bash
 pytest vision_localization_research/tests -v
 ```
